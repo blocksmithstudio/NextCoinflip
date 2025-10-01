@@ -2,7 +2,10 @@ package com.muhammaddaffa.nextcoinflip.users.repository;
 
 import com.muhammaddaffa.mdlib.utils.Config;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
+import com.muhammaddaffa.nextcoinflip.currencies.Currency;
+import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.users.User;
+import com.muhammaddaffa.nextcoinflip.users.models.CoinflipStatistic;
 import com.muhammaddaffa.nextcoinflip.users.models.WonItem;
 import com.muhammaddaffa.nextcoinflip.utils.Serializer;
 import org.bukkit.OfflinePlayer;
@@ -34,10 +37,15 @@ public class UserRepository {
 
         // Fetch all users data
         for (User user : userMap.values()) {
+            CoinflipStatistic statistic = user.getStatistic();
             // Set all statistics
-            config.set("users." + user.getUniqueId().toString() + ".statistic.wins", user.getStatistic().getWins());
-            config.set("users." + user.getUniqueId().toString() + ".statistic.losses", user.getStatistic().getLosses());
-            config.set("users." + user.getUniqueId().toString() + ".statistic.lose-streak", user.getStatistic().getLoseStreak());
+            config.set("users." + user.getUniqueId().toString() + ".statistic.wins", statistic.getWins());
+            config.set("users." + user.getUniqueId().toString() + ".statistic.losses", statistic.getLosses());
+            config.set("users." + user.getUniqueId().toString() + ".statistic.lose-streak", statistic.getLoseStreak());
+            // Set earnings statistics
+            for (Currency currency : CurrencyRepository.getCurrencies()) {
+                config.set("users." + user.getUniqueId().toString() + ".earnings." + currency.id(), statistic.getCurrencyEarnings(currency));
+            }
             // Set all won items data
             for (WonItem item : user.getWonItems()) {
                 String path = "users." + user.getUniqueId().toString() + ".won-items." + item.getUniqueId().toString() + ".";
@@ -58,10 +66,16 @@ public class UserRepository {
         for (String key : config.getConfigurationSection("users").getKeys(false)) {
             UUID uuid = UUID.fromString(key);
             User user = new User(uuid);
+            CoinflipStatistic statistic = user.getStatistic();
             // Insert all necessary data
-            user.getStatistic().setWins(config.getInt("users." + key + ".statistic.wins"));
-            user.getStatistic().setLosses(config.getInt("users." + key + ".statistic.losses"));
-            user.getStatistic().setLoseStreak(config.getInt("users." + key + ".statistic.lose-streak"));
+            statistic.setWins(config.getInt("users." + key + ".statistic.wins"));
+            statistic.setLosses(config.getInt("users." + key + ".statistic.losses"));
+            statistic.setLoseStreak(config.getInt("users." + key + ".statistic.lose-streak"));
+            // Insert earnings data
+            for (Currency currency : CurrencyRepository.getCurrencies()) {
+                statistic.setCurrencyEarnings(currency, config.getInt("users." + key + ".earnings." + currency.id()));
+            }
+            // Insert won item data
             if (config.isConfigurationSection("users." + key + ".won-items")) {
                 for (String uuidString : config.getConfigurationSection("users." + key + ".won-items").getKeys(false)) {
                     UUID id = UUID.fromString(uuidString);
