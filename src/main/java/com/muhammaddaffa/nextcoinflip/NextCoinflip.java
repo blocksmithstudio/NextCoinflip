@@ -43,8 +43,8 @@ public final class NextCoinflip extends JavaPlugin {
         tasks();
 
         // Load all data
-        UserRepository.load();
         CurrencyRepository.load();
+        UserRepository.load();
     }
 
     @Override
