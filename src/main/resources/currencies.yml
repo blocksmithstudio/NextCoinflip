@@ -1,0 +1,32 @@
+# The list of currencies available to wager
+# You could create your own currency, just follow the format
+currencies:
+  exp: # This is the id, must be UNIQUE!
+    enabled: true
+    # The min and max wager for this currency, set -1 to disable
+    minimum-wager: 1000
+    maximum-wager: -1
+    # The currency identifier for display purposes
+    identifier: exp
+    # The placeholder to show player's balance of this currency
+    balance-placeholder: "%player_total_exp%"
+    # The command to take exp
+    take-command: "exp take {player} {amount}"
+    # The command to give exp
+    give-command: "exp give {player} {amount}"
+  vault:
+    enabled: true
+    minimum-wager: 10000
+    maximum-wager: 1000000000
+    identifier: money
+    balance-placeholder: "%vault_eco_balance%"
+    take-command: "eco take {player} {amount}"
+    give-command: "eco give {player} {amount}"
+  player_points:
+    enabled: false
+    minimum-wager: 5
+    maximum-wager: 1000
+    identifier: points
+    balance-placeholder: "%playerpoints_points%"
+    take-command: "points take {player} {amount}"
+    give-command: "points give {player} {amount}"

@@ -1,0 +1,35 @@
+# The title and size of the gui
+title: "                &nConfirm"
+size: 45
+
+# Preview item
+preview-item:
+  # The slots for the wager item
+  slots: [4]
+  # The item display name and lore
+  display-name: "&a&nConfirm Wager"
+  lore:
+    - " "
+    - " &e⚠ &#8cc1cdBy accepting this, you will"
+    - "   &#8cc1cdlist the item in your hand to"
+    - "   &#8cc1cdbe wagered for a coinflip."
+    - " "
+    - " &a◆ &#8cc1cdWhen somebody is interested in"
+    - "   &#8cc1cdyour item you will be notified"
+    - "   &#8cc1cdin chat to accept or deny"
+    - " "
+    - " &a➜ &nClick&#8cc1cd to wager using this item."
+
+items:
+  confirm:
+    type: confirm
+    material: GREEN_STAINED_GLASS_PANE
+    display-name: "&aConfirm"
+    slots: [10, 11, 12, 19, 20, 21, 28, 29, 30]
+    lore: []
+  cancel:
+    type: cancel
+    material: RED_STAINED_GLASS_PANE
+    display-name: "&cCancel"
+    slots: [14, 15, 16, 23, 24, 25, 32, 33, 34]
+    lore: []

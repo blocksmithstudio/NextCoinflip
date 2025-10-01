@@ -1,0 +1,60 @@
+# The title and size of the gui
+title: "            &nCoinflip Stats"
+size: 36
+
+# This is for special item, such as earnings/losses item
+earnings-losses-item:
+  material: CHEST
+  display-name: "&#8cc1cdEarnings/Loss:"
+  slots: [23]
+  earnings:
+    positive:
+      - "&#8cc1cdYou have earned a total of"
+      - "&a{amount} {currency} &#8cc1cdfrom coinflips."
+      - " "
+    negative:
+      - "&#8cc1cdYou have lost a total of"
+      - "&c{amount} {currency} &#8cc1cdfrom coinflips."
+      - " "
+
+# List of additional items
+items:
+  wins:
+    material: GOLD_INGOT
+    display-name: "&#8cc1cdWins: &a{wins}"
+    slots: [11]
+    lore:
+      - "&#8cc1cdYou have won a total"
+      - "&#8cc1cdof &a{wins} &#8cc1cdcoinflips."
+  losses:
+    material: COAL
+    display-name: "&#8cc1cdLosses: &c{losses}"
+    slots: [13]
+    lore:
+      - "&#8cc1cdYou have lost a total"
+      - "&#8cc1cdof &c{losses} &#8cc1cdcoinflips."
+  winrate:
+    material: PAPER
+    display-name: "&#8cc1cdWinrate: &c{winrate}%"
+    slots: [15]
+    lore:
+      - "&#8cc1cdYou have won &c{winrate}% &#8cc1cdof"
+      - "&#8cc1cdyour &a{total_game} &#8cc1cdcoinflips."
+  lose-streak:
+    material: DIAMOND
+    display-name: "&#8cc1cdStreak: &c{streak}"
+    slots: [21]
+    lore:
+      - "&#8cc1cdYou have lost &c{streak} &#8cc1cdcoinflips"
+      - "&#8cc1cdin a row."
+  back:
+    type: back
+    material: PAPER
+    display-name: "&c&oClick to go back."
+    slots: [0]
+    lore: []
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+    display-name: " "
+    slots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+    lore: []

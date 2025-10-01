@@ -1,0 +1,28 @@
+# The title and size of the gui
+title: "                &nConfirm"
+size: 45
+
+items:
+  information:
+    material: EMERALD
+    display-name: "&a&nConfirm Wager"
+    slots: [4]
+    lore:
+      - " "
+      - " &e⚠ &#8cc1cdBy accepting this, you will"
+      - "   &#8cc1cdwager &a{wager_digits} {currency} &7({wager_format} {currency})"
+      - "   &#8cc1cdon a coinflip with {creator_display_name}"
+      - " "
+      - " &a➜ &nClick&#8cc1cd to accept this wager."
+  confirm:
+    type: confirm
+    material: GREEN_STAINED_GLASS_PANE
+    display-name: "&aConfirm"
+    slots: [10, 11, 12, 19, 20, 21, 28, 29, 30]
+    lore: []
+  cancel:
+    type: cancel
+    material: RED_STAINED_GLASS_PANE
+    display-name: "&cCancel"
+    slots: [14, 15, 16, 23, 24, 25, 32, 33, 34]
+    lore: []

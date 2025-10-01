@@ -1,0 +1,32 @@
+# The title and size of the gui
+title: "             &nWager Type"
+size: 9
+
+# List of items inside the currency selector
+items:
+  money:
+    type: vault # the currency id
+    material: PAPER
+    display-name: "&a&nWager Money"
+    slots: [2]
+    lore:
+      - " "
+      - " &a➜ &a&nClick&#8cc1cd to wager using &a&nmoney&f."
+  playerpoints:
+    type: player_points # the currency id
+    material: EMERALD
+    display-name: "&a&nWager Points&7 (Coming Soon)"
+    slots: [4]
+    lore:
+      - "&7You need PlayerPoints plugin to use this, and you"
+      - "&7can enable it in the &fcurrencies.yml &7config"
+      - " "
+      - " &a➜ &a&nClick&#8cc1cd to wager using &a&npoints&f."
+  exp:
+    type: exp # the currency id
+    material: EXPERIENCE_BOTTLE
+    display-name: "&a&nWager Experience"
+    slots: [6]
+    lore:
+      - " "
+      - " &a➜ &a&nClick&#8cc1cd to wager using &a&nEXP&f."

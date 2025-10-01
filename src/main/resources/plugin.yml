@@ -1,0 +1,8 @@
+name: NextCoinflip
+version: '${project.version}'
+main: com.muhammaddaffa.nextcoinflip.NextCoinflip
+api-version: '1.13'
+authors: [ aglerr ]
+website: https://muhammaddaffa.com
+depend:
+  - PlaceholderAPI

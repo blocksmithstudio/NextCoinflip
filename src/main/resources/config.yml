@@ -1,0 +1,28 @@
+
+# Item wager configuration
+item-wager:
+  hover-item: "&8[&f{item_displayname} &7{item_amount}x&8]"
+  accept-button: "&a&l[CLICK TO ACCEPT]"
+
+messages:
+  no-permission: "&7(/cf) &c✘ &#8cc1cdYou don't have permission to do this."
+  reload: "&7(/cf) &a✔ &#8cc1cdYou have reloaded the configuration."
+  game-existed: "&7(/cf) ◆ &#8cc1cdYou already have an existing game with the same type, cancel it first to create a new one!"
+  coinflip-create: "&7(/cf) ◆ {display_name} &#8cc1cdmade a &a↑ Coinflip ↓ &#8cc1cdfor: &a{wager} {currency}"
+  maximum-reached: "&7(/cf) &c✘ &#8cc1cdYour wager must be below: &a{wager} {currency}"
+  minimum-required: "&7(/cf) &c✘ &#8cc1cdYour wager must be above: &a{wager} {currency}"
+  not-enough-balance: "&7(/cf) &c✘ &#8cc1cdYou don't have enough &c{currency} &#8cc1cdto wager that much!"
+  coinflip-cancel: "&7(/cf) &c✘ &#8cc1cdYou have cancelled your coinflip."
+  balance-not-enough: "&7(/cf) &c✘ &#8cc1cdYou don't have enough &c{currency} &#8cc1cdto match that wager!"
+  invalid-item: "&7(/cf) &c✘ &#8cc1cdThis item cannot be wagered."
+  item-claim: "&a&l✔ &#8cc1cdYou have claimed&r {wager}"
+  item-offer: "&7(/cf) &a✔ &#8cc1cdYou have offered the item in your hand for this coinflip. Item will be taken away from you until the other player accepts!"
+  item-challenge: "&7(/cf) ◆ {challenger_display_name} &#8cc1cdhas offered you: {wager} &#8cc1cdfor your listed coinflip item."
+  item-challenge-accept: "&8◆ {click} &#8cc1cdor type &a/cf accept {player_name}"
+  no-item-game: "&7(/cf) &c✘ &#8cc1cdYou don't have an item coinflip game."
+  no-challenger: "&7(/cf) &c✘ decline-offer{player} did not give you any offer to item coinflip."
+  decline-offer: "&7(/cf) &c✘ {player} &#8cc1cdhas declined your item coinflip offer."
+  offer-cancelled: "&7(/cf) &c✘ &#8cc1cdYour coinflip item challenge has been cancelled because the game creator has select other offer or has left the server."
+  not-valid: "&7(/cf) &c✘ &#8cc1cdThe offer is no longer valid."
+  offer-expired: "&7(/cf) &c✘ &#8cc1cdOne of your item coinflip offer is expired, please collect it at /cf"
+  already-offered: "&7(/cf) &c✘ &#8cc1cdYou already has an offer for this coinflip, please wait to be cancelled, declined, expired, or accepted."

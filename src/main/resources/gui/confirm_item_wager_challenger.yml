@@ -1,0 +1,43 @@
+# The title and size of the gui
+title: "                &nConfirm"
+size: 45
+
+# Preview item
+preview-item:
+  slots:
+    challenger: [3]
+    opponent: [5]
+  # The display name of the preview item
+  display-name:
+    challenger: "&a&nConfirm Wager&7 (Your Item)"
+    opponent: "&a&nConfirm Wager&7 (Opponent's Item)"
+  # The lore for both preview item
+  lore:
+    - " "
+    - " &e⚠ &#8cc1cdBy accepting this, you will"
+    - "   &#8cc1cdoffer the item in your hand"
+    - "   &#8cc1cdas a wager for this coinflip."
+    - " "
+    - " &a➜ &nClick&#8cc1cd to wager using this item."
+
+challenger-head:
+  display-name: "{challenger_displayname}'s &#8cc1cdCoinflip Wager"
+  slots: [2]
+
+opponent-head:
+  display-name: "{opponent_displayname}'s &#8cc1cdCoinflip Wager"
+  slots: [6]
+
+items:
+  confirm:
+    type: confirm
+    material: GREEN_STAINED_GLASS_PANE
+    display-name: "&aConfirm"
+    slots: [10, 11, 12, 19, 20, 21, 28, 29, 30]
+    lore: []
+  cancel:
+    type: cancel
+    material: RED_STAINED_GLASS_PANE
+    display-name: "&cCancel"
+    slots: [14, 15, 16, 23, 24, 25, 32, 33, 34]
+    lore: []
