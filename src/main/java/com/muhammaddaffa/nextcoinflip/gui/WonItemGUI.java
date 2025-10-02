@@ -11,6 +11,7 @@ import com.muhammaddaffa.nextcoinflip.users.models.WonItem;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import com.muhammaddaffa.nextcoinflip.utils.HoverableMessage;
 import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
+import com.muhammaddaffa.nextcoinflip.utils.Utils;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -67,6 +68,13 @@ public class WonItemGUI extends FastInv {
 
             // Set the item
             this.setItem(slots.get(i), stack, event -> {
+                // Check if player has full inventory
+                if (Utils.isInventoryFull(player)) {
+                    SoundUtil.villagerNo(player);
+                    // Sends message
+                    NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.inventory-full");
+                    return;
+                }
                 // Give the item to the player
                 Common.addInventoryItem(player, original);
                 // Remove the item from the list

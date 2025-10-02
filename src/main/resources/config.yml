@@ -36,3 +36,4 @@ messages:
   not-valid: "&7(/cf) &c✘ &#8cc1cdThe offer is no longer valid."
   offer-expired: "&7(/cf) &c✘ &#8cc1cdOne of your item coinflip offer is expired, please collect it at /cf"
   already-offered: "&7(/cf) &c✘ &#8cc1cdYou already has an offer for this coinflip, please wait to be cancelled, declined, expired, or accepted."
+  inventory-full: "&7(/cf) &c✘ &#8cc1cdPlease free up some space in your inventory!"
