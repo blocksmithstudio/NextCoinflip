@@ -53,8 +53,26 @@ public class User {
         removeWonItem(item.getUniqueId());
     }
 
-    public void removeWonItem(UUID uuid) {
-        wonItems.removeIf(item -> item.getUniqueId().equals(uuid));
+    public void removeWonItem(UUID itemId) {
+        wonItems.removeIf(item -> item.getUniqueId().equals(itemId));
+        // Remove it from the database too
+        Executor.async(() -> {
+            SQLDatabase database = NextCoinflip.getInstance().getDatabase();
+            // Get the query
+            // (user_uuid, item_uuid, item, timestamp)
+            String query = "DELETE FROM " + SQLDatabase.ITEM_TABLE + " WHERE item_uuid = ?";
+            try (Connection connection = database.getConnection();
+                    PreparedStatement statement = connection.prepareStatement(query)) {
+                // Set the statements
+                statement.setString(1, itemId.toString());
+                // Execute the update
+                statement.executeUpdate();
+
+            } catch(SQLException ex) {
+                Logger.severe("Failed to remove won item " + itemId.toString() + " for user " + this.uuid.toString());
+                ex.printStackTrace();
+            }
+        });
     }
 
     public void save(boolean async) {

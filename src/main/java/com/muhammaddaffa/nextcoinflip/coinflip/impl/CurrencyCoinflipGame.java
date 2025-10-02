@@ -72,6 +72,10 @@ public class CurrencyCoinflipGame extends CoinflipGame {
         // Make the loser pay the money
         withdraw(Bukkit.getPlayer(loser), this.getWager());
         deposit(Bukkit.getPlayer(winner), this.getWager() * 2);
+
+        // Save the user here
+        winnerUser.save(true);
+        loserUser.save(true);
     }
 
     public int getWager() {

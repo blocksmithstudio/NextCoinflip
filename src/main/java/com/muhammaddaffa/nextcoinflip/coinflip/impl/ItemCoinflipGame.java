@@ -96,6 +96,10 @@ public class ItemCoinflipGame extends CoinflipGame {
         for (ItemStack stack : List.of(offers)) {
             UserRepository.getUser(winner).addWonItem(stack);
         }
+
+        // Save the user here
+        winnerUser.save(true);
+        loserUser.save(true);
     }
 
     @Override
