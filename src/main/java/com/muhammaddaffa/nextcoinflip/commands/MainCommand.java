@@ -96,7 +96,8 @@ public class MainCommand {
 
                                         // Send hoverable item message
                                         HoverableMessage.broadcastHoverableItemMessage(clone, NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-create")
-                                                .replace("{display_name}", player.getDisplayName()));
+                                                .replace("{display_name}", player.getDisplayName())
+                                                .replace("{currency}", ""));
 
                                         // Close the inventory
                                         player.closeInventory();
