@@ -36,7 +36,11 @@
                     <relocations>
                         <relocation>
                             <pattern>com.muhammaddaffa.mdlib</pattern>
-                            <shadedPattern>com.muhammaddaffa.rugacoinflip.mdlib</shadedPattern>
+                            <shadedPattern>com.muhammaddaffa.nextcoinflip.mdlib</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.zaxxer.hikari</pattern>
+                            <shadedPattern>com.muhammaddaffa.nextcoinflip.database.hikari</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
@@ -100,19 +104,11 @@
             <version>2.11.6</version>
             <scope>provided</scope>
         </dependency>
-        <!-- vault -->
+        <!-- hikaricp -->
         <dependency>
-            <groupId>com.github.MilkBowl</groupId>
-            <artifactId>VaultAPI</artifactId>
-            <version>1.7.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <!-- playerpoints -->
-        <dependency>
-            <groupId>org.black_ixx</groupId>
-            <artifactId>playerpoints</artifactId>
-            <version>3.3.0</version>
-            <scope>provided</scope>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>7.0.2</version>
         </dependency>
         <!-- mdlib -->
         <dependency>

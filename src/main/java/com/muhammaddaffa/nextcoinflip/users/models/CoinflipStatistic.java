@@ -1,8 +1,11 @@
 package com.muhammaddaffa.nextcoinflip.users.models;
 
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
+import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CoinflipStatistic {
@@ -74,6 +77,34 @@ public class CoinflipStatistic {
 
     public void addCurrencyEarnings(Currency currency, int amount) {
         earningsMap.put(currency.id(), getCurrencyEarnings(currency) + amount);
+    }
+
+    public String serializeEarnings() {
+
+        List<String> data = new ArrayList<>();
+        for (Currency currency : CurrencyRepository.getCurrencies()) {
+            data.add(currency.id() + "=" + getCurrencyEarnings(currency));
+        }
+        return String.join(";", data);
+    }
+
+    public void deserializeEarnings(String serialized) {
+        if (serialized == null || serialized.isEmpty()) return;
+        if (serialized.contains(";")) {
+            for (String each : serialized.split(";")) {
+                setEarnings(each);
+            }
+        } else {
+            setEarnings(serialized);
+        }
+    }
+
+    private void setEarnings(String serialized) {
+        String[] split = serialized.split("=");
+        Currency currency = CurrencyRepository.getCurrency(split[0]);
+        if (currency != null) {
+            setCurrencyEarnings(currency, Integer.parseInt(split[1]));
+        }
     }
 
 }

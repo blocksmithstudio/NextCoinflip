@@ -1,9 +1,17 @@
 package com.muhammaddaffa.nextcoinflip.users;
 
+import com.muhammaddaffa.mdlib.utils.Executor;
+import com.muhammaddaffa.mdlib.utils.Logger;
+import com.muhammaddaffa.nextcoinflip.NextCoinflip;
+import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
 import com.muhammaddaffa.nextcoinflip.users.models.CoinflipStatistic;
 import com.muhammaddaffa.nextcoinflip.users.models.WonItem;
+import com.muhammaddaffa.nextcoinflip.utils.Serializer;
 import org.bukkit.inventory.ItemStack;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
 
 public class User {
@@ -47,6 +55,64 @@ public class User {
 
     public void removeWonItem(UUID uuid) {
         wonItems.removeIf(item -> item.getUniqueId().equals(uuid));
+    }
+
+    public void save(boolean async) {
+        if (async) {
+            Executor.async(this::save);
+        } else {
+            this.save();
+        }
+    }
+
+    private void save() {
+        saveStatistics();
+        saveItems();
+    }
+
+    private void saveStatistics() {
+        SQLDatabase database = NextCoinflip.getInstance().getDatabase();
+        // Get the query
+        try (Connection connection = database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(database.getStatisticInsertQuery())) {
+            // Set the arguments
+            // (uuid, wins, losses, lose_streak, earnings)
+            statement.setString(1, this.uuid.toString());
+            statement.setInt(2, statistic.getWins());
+            statement.setInt(3, statistic.getLosses());
+            statement.setInt(4, statistic.getLoseStreak());
+            statement.setString(5, statistic.serializeEarnings());
+            // Execute update
+            statement.executeUpdate();
+
+        } catch(SQLException ex) {
+            Logger.severe("Failed to save " + this.uuid.toString() + " statistics data!");
+            ex.printStackTrace();
+        }
+    }
+
+    private void saveItems() {
+        SQLDatabase database = NextCoinflip.getInstance().getDatabase();
+        // Get the query
+        try (Connection connection = database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(database.getItemInsertQuery())) {
+            // (user_uuid, item_uuid, item, timestamp)
+            for (WonItem item : wonItems) {
+                // Set the arguments
+                statement.setString(1, this.uuid.toString());
+                statement.setString(2, item.getUniqueId().toString());
+                statement.setString(3, Serializer.serialize(item.getItemStack()));
+                statement.setLong(4, item.getTimestamp());
+
+                statement.addBatch();
+            }
+            // Execute the batch
+            statement.executeBatch();
+
+        } catch(SQLException ex) {
+            Logger.severe("Failed to save " + this.uuid.toString() + " items data!");
+            ex.printStackTrace();
+        }
     }
 
 }

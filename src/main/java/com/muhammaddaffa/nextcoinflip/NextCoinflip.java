@@ -8,7 +8,9 @@ import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
 import com.muhammaddaffa.nextcoinflip.commands.MainCommand;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
+import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
 import com.muhammaddaffa.nextcoinflip.listeners.UserQuitListener;
+import com.muhammaddaffa.nextcoinflip.users.listeners.UserListener;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
@@ -18,9 +20,11 @@ public final class NextCoinflip extends JavaPlugin {
 
     private static NextCoinflip instance;
 
-    public static Config DEFAULT_CONFIG, CURRENCY_CONFIG, DATA_CONFIG;
+    public static Config DEFAULT_CONFIG, CURRENCY_CONFIG;
     public static Config GAME_SELECTOR_MENU_CONFIG, CURRENCY_SELECTOR_MENU_CONFIG, CONFIRM_CURRENCY_WAGER_MENU_CONFIG,
             CONFIRM_ITEM_WAGER_CREATION_CONFIG, WON_ITEM_CONFIG, STATISTIC_CONFIG, CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG;
+
+    private final SQLDatabase database = new SQLDatabase();
 
     @Override
     public void onLoad() {
@@ -42,9 +46,13 @@ public final class NextCoinflip extends JavaPlugin {
         // Register tasks
         tasks();
 
+        // Connect the database here
+        database.connect();
+        database.createStatisticTable();
+        database.createItemTable();
+
         // Load all data
         CurrencyRepository.load();
-        UserRepository.load();
     }
 
     @Override
@@ -52,8 +60,8 @@ public final class NextCoinflip extends JavaPlugin {
         MDLib.shutdown();
         // On server stop, we should cancel all coinflip
         CoinflipRepository.getGames().forEach(CoinflipGame::cancel);
-        // Save all users data
-        UserRepository.save();
+        // Save all players data
+        UserRepository.unloadAll();
     }
 
     private void configs() {
@@ -75,8 +83,6 @@ public final class NextCoinflip extends JavaPlugin {
         STATISTIC_CONFIG = new ConfigBuilder("statistic.yml").setDirectory("gui").build();
         // gui/confirm_item_wager_challenger.yml
         CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG = ConfigBuilder.create("confirm_item_wager_challenger.yml").setDirectory("gui").build();
-        // data.yml
-        DATA_CONFIG = ConfigBuilder.create("data.yml").setShouldReload(false).build();
 
         Config.updateConfigs();
         Config.reload();
@@ -86,6 +92,7 @@ public final class NextCoinflip extends JavaPlugin {
         PluginManager pm = Bukkit.getPluginManager();
         // Register events
         pm.registerEvents(new UserQuitListener(), this);
+        pm.registerEvents(new UserListener(), this);
     }
 
     private void commands() {
@@ -95,6 +102,10 @@ public final class NextCoinflip extends JavaPlugin {
     private void tasks() {
         // Offer expiry task
         new OfferExpiryTask().runTaskTimer(this, 0L, (10 * 200));
+    }
+
+    public SQLDatabase getDatabase() {
+        return database;
     }
 
     public static NextCoinflip getInstance() {

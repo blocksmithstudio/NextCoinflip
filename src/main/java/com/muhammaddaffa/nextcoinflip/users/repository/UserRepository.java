@@ -1,18 +1,27 @@
 package com.muhammaddaffa.nextcoinflip.users.repository;
 
 import com.muhammaddaffa.mdlib.utils.Config;
+import com.muhammaddaffa.mdlib.utils.Executor;
+import com.muhammaddaffa.mdlib.utils.Logger;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
+import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.models.CoinflipStatistic;
 import com.muhammaddaffa.nextcoinflip.users.models.WonItem;
 import com.muhammaddaffa.nextcoinflip.utils.Serializer;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,62 +40,77 @@ public class UserRepository {
         return userMap.computeIfAbsent(uuid, k -> new User(uuid));
     }
 
-    public static void save() {
-        Config data = NextCoinflip.DATA_CONFIG;
-        FileConfiguration config = data.getConfig();
-
-        // Fetch all users data
-        for (User user : userMap.values()) {
-            CoinflipStatistic statistic = user.getStatistic();
-            // Set all statistics
-            config.set("users." + user.getUniqueId().toString() + ".statistic.wins", statistic.getWins());
-            config.set("users." + user.getUniqueId().toString() + ".statistic.losses", statistic.getLosses());
-            config.set("users." + user.getUniqueId().toString() + ".statistic.lose-streak", statistic.getLoseStreak());
-            // Set earnings statistics
-            for (Currency currency : CurrencyRepository.getCurrencies()) {
-                config.set("users." + user.getUniqueId().toString() + ".earnings." + currency.id(), statistic.getCurrencyEarnings(currency));
-            }
-            // Set all won items data
-            for (WonItem item : user.getWonItems()) {
-                String path = "users." + user.getUniqueId().toString() + ".won-items." + item.getUniqueId().toString() + ".";
-                config.set(path + "item", Serializer.serialize(item.getItemStack()));
-                config.set(path + "timestamp", item.getTimestamp());
-            }
-        }
-        // Save the data
-        data.saveConfig();
+    // Used when player leave the server
+    public static void unload(Player player) {
+        getUser(player).save(true);
+        userMap.remove(player.getUniqueId());
     }
 
-    public static void load() {
-        FileConfiguration config = NextCoinflip.DATA_CONFIG.getConfig();
-        if (!config.isConfigurationSection("users")) {
-            return;
-        }
-        // Fetch all users data from the config
-        for (String key : config.getConfigurationSection("users").getKeys(false)) {
-            UUID uuid = UUID.fromString(key);
-            User user = new User(uuid);
-            CoinflipStatistic statistic = user.getStatistic();
-            // Insert all necessary data
-            statistic.setWins(config.getInt("users." + key + ".statistic.wins"));
-            statistic.setLosses(config.getInt("users." + key + ".statistic.losses"));
-            statistic.setLoseStreak(config.getInt("users." + key + ".statistic.lose-streak"));
-            // Insert earnings data
-            for (Currency currency : CurrencyRepository.getCurrencies()) {
-                statistic.setCurrencyEarnings(currency, config.getInt("users." + key + ".earnings." + currency.id()));
-            }
-            // Insert won item data
-            if (config.isConfigurationSection("users." + key + ".won-items")) {
-                for (String uuidString : config.getConfigurationSection("users." + key + ".won-items").getKeys(false)) {
-                    UUID id = UUID.fromString(uuidString);
-                    ItemStack stack = Serializer.deserialize(config.getString("users." + key + ".won-items." + uuidString + ".item"));
-                    long timestamp = config.getLong("users." + key + ".won-items." + uuidString + ".timestamp");
-                    // Create the WonItem object and store it on the user object
-                    user.addWonItem(new WonItem(id, stack, timestamp));
+    public static void unloadAll() {
+        Bukkit.getOnlinePlayers().forEach(player -> getUser(player).save(false));
+    }
+
+    public static void load(Player player) {
+        User user = new User(player.getUniqueId());
+        // Load the data first
+        Executor.async(() -> {
+            loadStatistics(user);
+            loadItems(user);
+        });
+        // Input the data on the map
+        userMap.put(player.getUniqueId(), user);
+    }
+
+    private static void loadStatistics(User user) {
+        SQLDatabase database = NextCoinflip.getInstance().getDatabase();
+        // Get the query
+        String query = "SELECT * FROM " + SQLDatabase.STATISTIC_TABLE + " WHERE uuid = ?";
+        try (Connection connection = database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            // (uuid, wins, losses, lose_streak, earnings)
+            statement.setString(1, user.getUniqueId().toString());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    // Load the statistics data
+                    int wins = rs.getInt("wins");
+                    int losses = rs.getInt("losses");
+                    int loseStreak = rs.getInt("lose_streak");
+                    // Set the statistics
+                    CoinflipStatistic statistic = user.getStatistic();
+                    statistic.setWins(wins);
+                    statistic.setLosses(losses);
+                    statistic.setLoseStreak(loseStreak);
+                    statistic.deserializeEarnings(rs.getString("earnings"));
                 }
             }
-            // Store the data into the map
-            userMap.put(uuid, user);
+        } catch (SQLException ex) {
+            Logger.severe("Failed to load " + user.getUniqueId().toString() + " statistics data!");
+            ex.printStackTrace();
+        }
+    }
+
+    private static void loadItems(User user) {
+        SQLDatabase database = NextCoinflip.getInstance().getDatabase();
+        // Get the query
+        String query = "SELECT * FROM " + SQLDatabase.ITEM_TABLE + " WHERE user_uuid = ?";
+        try (Connection connection = database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            // (user_uuid, item_uuid, item, timestamp)
+            statement.setString(1, user.getUniqueId().toString());
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    UUID uuid = UUID.fromString(rs.getString("item_uuid"));
+                    ItemStack item = Serializer.deserialize(rs.getString("item"));
+                    long timestamp = rs.getLong("timestamp");
+                    if (item != null) {
+                        // Insert the item to user won item
+                        user.addWonItem(new WonItem(uuid, item, timestamp));
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.severe("Failed to load " + user.getUniqueId().toString() + " statistics data!");
+            ex.printStackTrace();
         }
     }
 

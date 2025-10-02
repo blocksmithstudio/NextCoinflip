@@ -4,6 +4,7 @@ import com.muhammaddaffa.mdlib.utils.Logger;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,6 +13,11 @@ import java.util.Map;
 public class CurrencyRepository {
 
     private static final Map<String, Currency> currencyMap = new HashMap<>();
+
+    @Nullable
+    public static Currency getCurrency(String id) {
+        return currencyMap.get(id);
+    }
 
     public static Collection<Currency> getCurrencies() {
         return currencyMap.values();
