@@ -97,7 +97,7 @@ public class SQLDatabase {
     public void createItemTable() {
         this.executeUpdate("CREATE TABLE IF NOT EXISTS " + ITEM_TABLE + " (" +
                 "user_uuid VARCHAR(255) NOT NULL," +
-                "item_uuid VARCHAR(255) NOT NULL," +
+                "item_uuid VARCHAR(255) NOT NULL PRIMARY KEY," +
                 "item TEXT," +
                 "timestamp BIGINT NOT NULL" +
                 ");");
