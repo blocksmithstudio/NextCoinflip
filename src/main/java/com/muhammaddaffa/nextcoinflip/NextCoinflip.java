@@ -9,7 +9,7 @@ import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
 import com.muhammaddaffa.nextcoinflip.commands.MainCommand;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
-import com.muhammaddaffa.nextcoinflip.listeners.UserQuitListener;
+import com.muhammaddaffa.nextcoinflip.users.listeners.UserQuitListener;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserListener;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import org.bukkit.Bukkit;

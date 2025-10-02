@@ -1,4 +1,4 @@
-package com.muhammaddaffa.nextcoinflip.listeners;
+package com.muhammaddaffa.nextcoinflip.users.listeners;
 
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.impl.ItemCoinflipGame;
