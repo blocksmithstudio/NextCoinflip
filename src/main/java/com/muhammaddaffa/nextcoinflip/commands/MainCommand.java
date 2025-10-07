@@ -175,7 +175,7 @@ public class MainCommand {
     }
 
     private void reload(CommandSender sender) {
-        if (!sender.hasPermission("rugacoinflip.admin")) {
+        if (!sender.hasPermission("nextcoinflip.admin")) {
             NextCoinflip.DEFAULT_CONFIG.sendMessage(sender, "messages.no-permission");
             return;
         }
