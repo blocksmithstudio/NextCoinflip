@@ -14,6 +14,13 @@ item-wager:
   hover-item: "&8[&f{item_displayname} &7{item_amount}x&8]"
   accept-button: "&a&l[CLICK TO ACCEPT]"
 
+# The head item used when coinflip game is being played
+coinflip-head-item:
+  display-name: "{player_displayname}"
+  lore:
+    - "  &#8cc1cdWins: &a{wins} &7({winrate}% winrate)"
+    - "  &#8cc1cdLosses: &a{losses} &7({lose_streak} streak)"
+
 messages:
   no-permission: "&7(/cf) &c✘ &#8cc1cdYou don't have permission to do this."
   reload: "&7(/cf) &a✔ &#8cc1cdYou have reloaded the configuration."
