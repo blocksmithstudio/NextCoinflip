@@ -9,6 +9,7 @@ import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
 import com.muhammaddaffa.nextcoinflip.commands.MainCommand;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
+import com.muhammaddaffa.nextcoinflip.hooks.CoinflipExpansion;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserQuitListener;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserListener;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
@@ -53,6 +54,9 @@ public final class NextCoinflip extends JavaPlugin {
 
         // Load all data
         CurrencyRepository.load();
+
+        // Register the papi expansion
+        new CoinflipExpansion().register();
     }
 
     @Override
