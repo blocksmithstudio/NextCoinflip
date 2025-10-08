@@ -97,13 +97,13 @@ public class CoinflipGUI extends FastInv {
 
         private final int creatorSlot = 10;
         private final int creatorItemSlot = 11;
-        private final int[] creatorFillSlots = {0, 1, 2, 8, 11, 18, 19, 20};
+        private final int[] creatorFillSlots = {0, 1, 2, 9, 11, 18, 19, 20};
 
         private final int challengerSlot = 16;
-        private final int challengerItemSlot = 17;
+        private final int challengerItemSlot = 15;
         private final int[] challengerFillSlots = {6, 7, 8, 15, 17, 24, 25, 26};
 
-        private final int[] animationSlots = {3, 4, 5, 12, 14, 21, 22, 23};
+        private final int[] animationSlots = {3, 4, 5, 12, 13, 14, 21, 22, 23};
 
         private final CoinflipGame game;
         private final Player creator, challenger;
@@ -121,11 +121,6 @@ public class CoinflipGUI extends FastInv {
 
         @Override
         public void run() {
-            if (step >= totalSteps) {
-                finish();
-                return;
-            }
-
             // Increment the tick counter
             tickCounter++;
 
@@ -134,7 +129,7 @@ public class CoinflipGUI extends FastInv {
             menu.setItems(creatorFillSlots, new ItemBuilder(Material.RED_STAINED_GLASS_PANE).name(" ").build());
 
             menu.setItem(challengerSlot, challengerHead);
-            menu.setItems(creatorFillSlots, new ItemBuilder(Material.BLUE_STAINED_GLASS_PANE).name(" ").build());
+            menu.setItems(challengerFillSlots, new ItemBuilder(Material.BLUE_STAINED_GLASS_PANE).name(" ").build());
 
             if (game instanceof ItemCoinflipGame icg) {
                 menu.setItem(creatorItemSlot, icg.getOffers()[0].clone());
@@ -142,6 +137,11 @@ public class CoinflipGUI extends FastInv {
             }
 
             if (tickCounter >= delay) {
+                if (step >= totalSteps) {
+                    finish();
+                    return;
+                }
+
                 // Check if it's a creator turn
                 boolean isCreator = step % 2 == 0;
 
