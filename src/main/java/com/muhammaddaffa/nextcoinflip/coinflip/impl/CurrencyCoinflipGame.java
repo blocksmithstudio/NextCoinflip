@@ -69,6 +69,7 @@ public class CurrencyCoinflipGame extends CoinflipGame {
         User loserUser = UserRepository.getUser(loser);
         loserUser.getStatistic().addLosses();
         loserUser.getStatistic().addLoseStreak();
+        loserUser.getStatistic().addCurrencyEarnings(currency, -this.getWager());
         // Make the loser pay the money
         withdraw(Bukkit.getPlayer(loser), this.getWager());
         deposit(Bukkit.getPlayer(winner), this.getWager() * 2);
