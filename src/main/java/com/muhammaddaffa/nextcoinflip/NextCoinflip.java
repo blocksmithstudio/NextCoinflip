@@ -100,7 +100,9 @@ public final class NextCoinflip extends JavaPlugin {
     }
 
     private void commands() {
-        new MainCommand();
+        MainCommand command = new MainCommand();
+        this.getCommand("coinflip").setExecutor(command);
+        this.getCommand("coinflip").setTabCompleter(command);
     }
 
     private void tasks() {

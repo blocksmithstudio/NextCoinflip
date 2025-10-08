@@ -4,5 +4,10 @@ main: com.muhammaddaffa.nextcoinflip.NextCoinflip
 api-version: '1.13'
 authors: [ aglerr ]
 website: https://muhammaddaffa.com
+
 depend:
   - PlaceholderAPI
+
+commands:
+  coinflip:
+    aliases: [nextcoinflip, cf]
