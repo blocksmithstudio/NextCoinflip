@@ -37,12 +37,12 @@ public class HoverableMessage {
         int itemAmount = stack.getAmount();
 
         // Create the item message
-        String hoverMessage = NextCoinflip.DEFAULT_CONFIG.getString("item-wager.hover-item")
+        String hoverMessage = Common.color(NextCoinflip.DEFAULT_CONFIG.getString("item-wager.hover-item")
                 .replace("{item_displayname}", itemDisplayName)
-                .replace("{item_amount}", itemAmount + "");
+                .replace("{item_amount}", itemAmount + ""));
 
         // Create the hoverable component for the item
-        TextComponent hoverableComponent = new TextComponent(Common.color(hoverMessage));
+        TextComponent hoverableComponent = new TextComponent(TextComponent.fromLegacyText(hoverMessage));
         hoverableComponent.setHoverEvent(new HoverEvent(
                 HoverEvent.Action.SHOW_ITEM,
                 new Item(stack.getType().getKey().toString(),
@@ -66,8 +66,8 @@ public class HoverableMessage {
         String afterClick = Common.color(parts.length > 1 ? parts[1] : "");
 
         // Create the clickable component
-        String clickText = NextCoinflip.DEFAULT_CONFIG.getString("item-wager.accept-button");
-        TextComponent clickableComponent = new TextComponent(Common.color(clickText));
+        String clickText = Common.color(NextCoinflip.DEFAULT_CONFIG.getString("item-wager.accept-button"));
+        TextComponent clickableComponent = new TextComponent(TextComponent.fromLegacyText(clickText));
         clickableComponent.setClickEvent(new ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
                 command
