@@ -43,12 +43,7 @@ public class HoverableMessage {
 
         // Create the hoverable component for the item
         TextComponent hoverableComponent = new TextComponent(TextComponent.fromLegacyText(hoverMessage));
-        hoverableComponent.setHoverEvent(new HoverEvent(
-                HoverEvent.Action.SHOW_ITEM,
-                new Item(stack.getType().getKey().toString(),
-                        stack.getAmount(),
-                        ItemTag.ofNbt(stack.getItemMeta() != null ? stack.getItemMeta().getAsString() : ""))
-        ));
+        hoverableComponent.setHoverEvent(ItemHoverEventHelper.createFrom(stack));
 
         // Create the final message
         TextComponent finalMessage = new TextComponent(TextComponent.fromLegacyText(beforeWager));
@@ -84,6 +79,52 @@ public class HoverableMessage {
 
         // Send the message to the player
         player.spigot().sendMessage(finalMessage);
+    }
+
+    private static String toNbtString(ItemStack bukkitStack) {
+        try {
+            // org.bukkit.craftbukkit.<ver>.inventory.CraftItemStack
+            String cbPackage = Bukkit.getServer().getClass().getPackage().getName(); // org.bukkit.craftbukkit.v1_20_R4
+            String cbVersion = cbPackage.substring(cbPackage.lastIndexOf('.') + 1);
+            Class<?> craftItemStackClass = Class.forName("org.bukkit.craftbukkit." + cbVersion + ".inventory.CraftItemStack");
+            Object nmsStack = craftItemStackClass
+                    .getMethod("asNMSCopy", ItemStack.class)
+                    .invoke(null, bukkitStack);
+
+            // Try modern class names first (1.17+), fallback to legacy
+            Class<?> compoundTagClass;
+            try {
+                compoundTagClass = Class.forName("net.minecraft.nbt.CompoundTag"); // 1.17+
+            } catch (ClassNotFoundException ignored) {
+                try {
+                    compoundTagClass = Class.forName("net.minecraft.server." + cbVersion + ".NBTTagCompound"); // 1.16-
+                } catch (ClassNotFoundException e) {
+                    compoundTagClass = Class.forName("net.minecraft.nbt.NBTTagCompound"); // some mappings
+                }
+            }
+
+            Object tagInstance = compoundTagClass.getDeclaredConstructor().newInstance();
+
+            // Try common "save" signatures across versions
+            //  - 1.17–1.20: ItemStack#save(CompoundTag) -> CompoundTag
+            //  - newer mappings may differ; also try getTag() as a fallback
+            try {
+                Object written = nmsStack.getClass().getMethod("save", compoundTagClass).invoke(nmsStack, tagInstance);
+                return written.toString(); // SNBT
+            } catch (NoSuchMethodException e) {
+                // Fallback: getTag() if present
+                try {
+                    Object tag = nmsStack.getClass().getMethod("getTag").invoke(nmsStack);
+                    return tag != null ? tag.toString() : "{}";
+                } catch (NoSuchMethodException ex) {
+                    // Last resort: toString() on our created tag (may be empty but valid)
+                    return tagInstance.toString();
+                }
+            }
+        } catch (Throwable t) {
+            // If anything fails, return empty tag (still valid SNBT)
+            return "{}";
+        }
     }
 
 }
