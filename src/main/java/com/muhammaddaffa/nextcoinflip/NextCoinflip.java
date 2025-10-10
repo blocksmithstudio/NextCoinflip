@@ -13,11 +13,14 @@ import com.muhammaddaffa.nextcoinflip.hooks.CoinflipExpansion;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserQuitListener;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserListener;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class NextCoinflip extends JavaPlugin {
+
+    private static final int PLUGIN_ID = 27532;
 
     private static NextCoinflip instance;
 
@@ -46,6 +49,9 @@ public final class NextCoinflip extends JavaPlugin {
 
         // Register tasks
         tasks();
+
+        // Load the metrics
+        metrics();
 
         // Connect the database here
         database.connect();
@@ -108,6 +114,11 @@ public final class NextCoinflip extends JavaPlugin {
     private void tasks() {
         // Offer expiry task
         new OfferExpiryTask().runTaskTimer(this, 0L, (10 * 200));
+    }
+
+    private void metrics() {
+        Metrics metrics = new Metrics(this, PLUGIN_ID);
+        // Maybe add custom chart in the future
     }
 
     public SQLDatabase getDatabase() {

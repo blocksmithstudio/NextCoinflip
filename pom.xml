@@ -42,6 +42,10 @@
                             <pattern>com.zaxxer.hikari</pattern>
                             <shadedPattern>com.muhammaddaffa.nextcoinflip.database.hikari</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>org.bstats</pattern>
+                            <shadedPattern>com.muhammaddaffa.nextcoinflip.bstats</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
                 <executions>
@@ -109,6 +113,12 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>7.0.2</version>
+        </dependency>
+        <!-- bstats -->
+        <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>3.0.2</version>
         </dependency>
         <!-- mdlib -->
         <dependency>
