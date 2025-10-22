@@ -6,7 +6,7 @@ import com.muhammaddaffa.mdlib.utils.ConfigBuilder;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
-import com.muhammaddaffa.nextcoinflip.commands.MainCommand;
+import com.muhammaddaffa.nextcoinflip.commands.CoinflipCommand;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
 import com.muhammaddaffa.nextcoinflip.hooks.CoinflipExpansion;
@@ -29,7 +29,6 @@ public final class NextCoinflip extends JavaPlugin {
             CONFIRM_ITEM_WAGER_CREATION_CONFIG, WON_ITEM_CONFIG, STATISTIC_CONFIG, CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG;
 
     private final SQLDatabase database = new SQLDatabase();
-
     @Override
     public void onLoad() {
         MDLib.inject(this);
@@ -106,9 +105,7 @@ public final class NextCoinflip extends JavaPlugin {
     }
 
     private void commands() {
-        MainCommand command = new MainCommand();
-        this.getCommand("coinflip").setExecutor(command);
-        this.getCommand("coinflip").setTabCompleter(command);
+        MDLib.getCommandRegistry().register(new CoinflipCommand());
     }
 
     private void tasks() {

@@ -7,7 +7,3 @@ website: https://muhammaddaffa.com
 
 depend:
   - PlaceholderAPI
-
-commands:
-  coinflip:
-    aliases: [nextcoinflip, cf]
