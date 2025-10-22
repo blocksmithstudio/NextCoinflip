@@ -28,7 +28,7 @@ public class CurrencySelectorGUI extends FastInv {
     public CurrencySelectorGUI(int wager) {
         super(NextCoinflip.CURRENCY_SELECTOR_MENU_CONFIG.getInt("size"),
                 Common.color(NextCoinflip.CURRENCY_SELECTOR_MENU_CONFIG.getString("title")));
-        this.wager = wager;
+        this.wager = Math.abs(wager);
 
         for (Currency currency : CurrencyRepository.getCurrencies()) {
             if (!currency.enabled()) continue;
