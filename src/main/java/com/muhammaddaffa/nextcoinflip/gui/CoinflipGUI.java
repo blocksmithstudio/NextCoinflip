@@ -197,6 +197,7 @@ public class CoinflipGUI extends FastInv {
 
             // Send message for both side
             if (game instanceof ItemCoinflipGame itemGame) {
+                placeholder.add("{currency}", "");
                 ItemStack stack = itemGame.getOffers()[game.getPlayers().indexOf(loserPlayer)];
                 // Send to winner
                 HoverableMessage.sendHoverableItemMessage(
@@ -216,7 +217,7 @@ public class CoinflipGUI extends FastInv {
             } else if(game instanceof CurrencyCoinflipGame currencyGame) {
                 // Add more placeholders
                 placeholder.add("{wager}", Common.format(currencyGame.getWager()))
-                        .add("{currency}", currencyGame.getCurrency().identifier());
+                        .add("{currency}", " " + currencyGame.getCurrency().identifier());
                 // Send message to the winner
                 NextCoinflip.DEFAULT_CONFIG.sendMessage(winnerPlayer, "messages.coinflip-winner", placeholder);
                 // Send message to the loser
