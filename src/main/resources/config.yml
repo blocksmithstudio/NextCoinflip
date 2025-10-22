@@ -44,3 +44,5 @@ messages:
   offer-expired: "&7(/cf) &c✘ &#8cc1cdOne of your item coinflip offer is expired, please collect it at /cf"
   already-offered: "&7(/cf) &c✘ &#8cc1cdYou already has an offer for this coinflip, please wait to be cancelled, declined, expired, or accepted."
   inventory-full: "&7(/cf) &c✘ &#8cc1cdPlease free up some space in your inventory!"
+  coinflip-winner: "&7(/cf) &a✔ &#8cc1cdYou have won a coinflip game against &c{loser} &7({wager}&7)"
+  coinflip-loser: "&7(/cf) &c✘ &#8cc1cdYou have lost a coinflip game against &c{winner} &7({wager}&7)"

@@ -1,16 +1,15 @@
 package com.muhammaddaffa.nextcoinflip.gui;
 
 import com.muhammaddaffa.mdlib.fastinv.FastInv;
-import com.muhammaddaffa.mdlib.utils.Common;
-import com.muhammaddaffa.mdlib.utils.Executor;
-import com.muhammaddaffa.mdlib.utils.ItemBuilder;
-import com.muhammaddaffa.mdlib.utils.Placeholder;
+import com.muhammaddaffa.mdlib.utils.*;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.impl.CurrencyCoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.impl.ItemCoinflipGame;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.models.CoinflipStatistic;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
+import com.muhammaddaffa.nextcoinflip.utils.HoverableMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -173,6 +172,10 @@ public class CoinflipGUI extends FastInv {
         public void finish() {
             // Determine winner
             UUID winner = ThreadLocalRandom.current().nextBoolean() ? game.getCreator() : game.getChallenger();
+            UUID loser = game.getOpposite(winner);
+
+            Player winnerPlayer = Bukkit.getPlayer(winner);
+            Player loserPlayer = Bukkit.getPlayer(loser);
 
             // Fill it with lime glass pane
             if (winner.equals(game.getCreator())) {
@@ -185,8 +188,40 @@ public class CoinflipGUI extends FastInv {
             menu.getOnWin().accept(winner);
 
             // Sound for the winner
-            menu.playSound(Bukkit.getPlayer(winner), Sound.UI_TOAST_CHALLENGE_COMPLETE);
+            menu.playSound(winnerPlayer, Sound.UI_TOAST_CHALLENGE_COMPLETE);
             menu.playSound(Bukkit.getPlayer(game.getOpposite(winner)), Sound.ENTITY_VILLAGER_NO);
+
+            Placeholder placeholder = new Placeholder()
+                    .add("{winner}", winnerPlayer.getDisplayName())
+                    .add("{loser}", loserPlayer.getDisplayName());
+
+            // Send message for both side
+            if (game instanceof ItemCoinflipGame itemGame) {
+                ItemStack stack = itemGame.getOffers()[game.getPlayers().indexOf(loserPlayer)];
+                // Send to winner
+                HoverableMessage.sendHoverableItemMessage(
+                        winnerPlayer,
+                        stack,
+                        NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-winner"),
+                        placeholder
+                );
+
+                HoverableMessage.sendHoverableItemMessage(
+                        loserPlayer,
+                        stack,
+                        NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-loser"),
+                        placeholder
+                );
+
+            } else if(game instanceof CurrencyCoinflipGame currencyGame) {
+                // Add more placeholders
+                placeholder.add("{wager}", Common.format(currencyGame.getWager()))
+                        .add("{currency}", currencyGame.getCurrency().identifier());
+                // Send message to the winner
+                NextCoinflip.DEFAULT_CONFIG.sendMessage(winnerPlayer, "messages.coinflip-winner", placeholder);
+                // Send message to the loser
+                NextCoinflip.DEFAULT_CONFIG.sendMessage(loserPlayer, "messages.coinflip-loser", placeholder);
+            }
 
             // Make player can close this menu
             menu.setCanClose(true);

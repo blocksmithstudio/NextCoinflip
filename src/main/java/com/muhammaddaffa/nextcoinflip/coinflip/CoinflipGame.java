@@ -106,7 +106,7 @@ public abstract class CoinflipGame {
         return creator;
     }
 
-    public Collection<Player> getPlayers() {
+    public List<Player> getPlayers() {
         return List.of(Bukkit.getPlayer(creator), Bukkit.getPlayer(challenger));
     }
 

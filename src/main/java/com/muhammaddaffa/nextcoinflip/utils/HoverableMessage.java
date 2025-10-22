@@ -1,6 +1,7 @@
 package com.muhammaddaffa.nextcoinflip.utils;
 
 import com.muhammaddaffa.mdlib.utils.Common;
+import com.muhammaddaffa.mdlib.utils.Placeholder;
 import com.muhammaddaffa.mdlib.utils.WordUtils;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import net.md_5.bungee.api.ChatColor;
@@ -9,6 +10,7 @@ import net.md_5.bungee.api.chat.hover.content.Item;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public class HoverableMessage {
 
@@ -25,10 +27,19 @@ public class HoverableMessage {
     }
 
     public static void sendHoverableItemMessage(Player player, ItemStack stack, String message) {
+        sendHoverableItemMessage(player, stack, message, null);
+    }
+
+    public static void sendHoverableItemMessage(Player player, ItemStack stack, String message, @Nullable Placeholder placeholder) {
         // Parse the message color codes
         String[] parts = message.split("\\{wager}", 2);
         String beforeWager = Common.color(parts[0]);
         String afterWager = Common.color(parts.length > 1 ? parts[1] : "");
+
+        if (placeholder != null) {
+            beforeWager = placeholder.translate(beforeWager);
+            afterWager = placeholder.translate(afterWager);
+        }
 
         // Get the item's display name and amount
         String itemDisplayName = stack.hasItemMeta() && stack.getItemMeta().hasDisplayName() ?
@@ -79,52 +90,6 @@ public class HoverableMessage {
 
         // Send the message to the player
         player.spigot().sendMessage(finalMessage);
-    }
-
-    private static String toNbtString(ItemStack bukkitStack) {
-        try {
-            // org.bukkit.craftbukkit.<ver>.inventory.CraftItemStack
-            String cbPackage = Bukkit.getServer().getClass().getPackage().getName(); // org.bukkit.craftbukkit.v1_20_R4
-            String cbVersion = cbPackage.substring(cbPackage.lastIndexOf('.') + 1);
-            Class<?> craftItemStackClass = Class.forName("org.bukkit.craftbukkit." + cbVersion + ".inventory.CraftItemStack");
-            Object nmsStack = craftItemStackClass
-                    .getMethod("asNMSCopy", ItemStack.class)
-                    .invoke(null, bukkitStack);
-
-            // Try modern class names first (1.17+), fallback to legacy
-            Class<?> compoundTagClass;
-            try {
-                compoundTagClass = Class.forName("net.minecraft.nbt.CompoundTag"); // 1.17+
-            } catch (ClassNotFoundException ignored) {
-                try {
-                    compoundTagClass = Class.forName("net.minecraft.server." + cbVersion + ".NBTTagCompound"); // 1.16-
-                } catch (ClassNotFoundException e) {
-                    compoundTagClass = Class.forName("net.minecraft.nbt.NBTTagCompound"); // some mappings
-                }
-            }
-
-            Object tagInstance = compoundTagClass.getDeclaredConstructor().newInstance();
-
-            // Try common "save" signatures across versions
-            //  - 1.17–1.20: ItemStack#save(CompoundTag) -> CompoundTag
-            //  - newer mappings may differ; also try getTag() as a fallback
-            try {
-                Object written = nmsStack.getClass().getMethod("save", compoundTagClass).invoke(nmsStack, tagInstance);
-                return written.toString(); // SNBT
-            } catch (NoSuchMethodException e) {
-                // Fallback: getTag() if present
-                try {
-                    Object tag = nmsStack.getClass().getMethod("getTag").invoke(nmsStack);
-                    return tag != null ? tag.toString() : "{}";
-                } catch (NoSuchMethodException ex) {
-                    // Last resort: toString() on our created tag (may be empty but valid)
-                    return tagInstance.toString();
-                }
-            }
-        } catch (Throwable t) {
-            // If anything fails, return empty tag (still valid SNBT)
-            return "{}";
-        }
     }
 
 }
