@@ -1,5 +1,6 @@
 package com.muhammaddaffa.nextcoinflip.commands;
 
+import com.muhammaddaffa.mdlib.commands.args.ArgSuggester;
 import com.muhammaddaffa.mdlib.commands.args.Suggester;
 import com.muhammaddaffa.mdlib.commands.args.builtin.IntArg;
 import com.muhammaddaffa.mdlib.commands.args.builtin.StringArg;
@@ -63,7 +64,7 @@ public class CoinflipCommand extends RoutedCommand {
         // coinflip accept <player>
         sub("accept")
                 .arg("name", new StringArg(),
-                        Suggester.dynamic((sender, prefix) -> {
+                        ArgSuggester.ofDynamic((sender, prefix) -> {
                             if (sender instanceof Player player) {
                                 ItemCoinflipGame itemGame = CoinflipRepository.getGames(player)
                                         .stream()
