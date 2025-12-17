@@ -46,3 +46,4 @@ messages:
   inventory-full: "&7(/cf) &c✘ &#8cc1cdPlease free up some space in your inventory!"
   coinflip-winner: "&7(/cf) &a✔ &#8cc1cdYou have won a coinflip game against &c{loser} &#8cc1cdand you've won &a{wager}{currency}"
   coinflip-loser: "&7(/cf) &c✘ &#8cc1cdYou have lost a coinflip game against &c{winner} &#8cc1cdand you've lost &c{wager}{currency}"
+  coinflip-already-started: "&7(/cf) &c✘ &#8cc1cdThis coinflip has already been started with someone else."

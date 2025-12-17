@@ -10,6 +10,7 @@ import com.muhammaddaffa.nextcoinflip.commands.CoinflipCommand;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
 import com.muhammaddaffa.nextcoinflip.hooks.CoinflipExpansion;
+import com.muhammaddaffa.nextcoinflip.offlinecommand.OfflineCommandManager;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserQuitListener;
 import com.muhammaddaffa.nextcoinflip.users.listeners.UserListener;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
@@ -24,7 +25,7 @@ public final class NextCoinflip extends JavaPlugin {
 
     private static NextCoinflip instance;
 
-    public static Config DEFAULT_CONFIG, CURRENCY_CONFIG;
+    public static Config DEFAULT_CONFIG, CURRENCY_CONFIG, DATA_CONFIG;
     public static Config GAME_SELECTOR_MENU_CONFIG, CURRENCY_SELECTOR_MENU_CONFIG, CONFIRM_CURRENCY_WAGER_MENU_CONFIG,
             CONFIRM_ITEM_WAGER_CREATION_CONFIG, WON_ITEM_CONFIG, STATISTIC_CONFIG, CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG;
 
@@ -62,6 +63,10 @@ public final class NextCoinflip extends JavaPlugin {
 
         // Register the papi expansion
         new CoinflipExpansion().register();
+
+        // Offline command mechanics
+        OfflineCommandManager.load();
+        OfflineCommandManager.startTask();
     }
 
     @Override
@@ -92,6 +97,8 @@ public final class NextCoinflip extends JavaPlugin {
         STATISTIC_CONFIG = new ConfigBuilder("statistic.yml").setDirectory("gui").build();
         // gui/confirm_item_wager_challenger.yml
         CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG = ConfigBuilder.create("confirm_item_wager_challenger.yml").setDirectory("gui").build();
+        // data.yml
+        DATA_CONFIG = ConfigBuilder.create("data.yml").setShouldReload(false).build();
 
         Config.updateConfigs();
         Config.reload();
