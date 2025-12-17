@@ -23,6 +23,8 @@ public class CurrencyCoinflipGame extends CoinflipGame {
     private final Currency currency;
     private final int wager;
 
+    private boolean starting = false;
+
     public CurrencyCoinflipGame(UUID creator, Currency currency, int wager) {
         super(creator);
         this.currency = currency;
@@ -118,6 +120,12 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                     SoundUtil.click(clicker);
                 })
                 .onAccept(() -> {
+                    if (starting) {
+                        NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.coinflip-already-started");
+                        SoundUtil.villagerNo(clicker);
+                        return;
+                    }
+
                     SoundUtil.click(clicker);
                     // Check if the guy has enough money
                     if (!this.hasEnough(clicker)) {
@@ -128,9 +136,10 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                         clicker.closeInventory();
                         // Play fail sounds
                         SoundUtil.villagerNo(clicker);
-
                         return;
                     }
+                    // Mark this game as started
+                    starting = true;
                     // Set the challenger
                     this.setChallenger(clicker.getUniqueId());
                     // Start the game
