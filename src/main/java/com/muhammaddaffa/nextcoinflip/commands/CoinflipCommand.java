@@ -42,7 +42,6 @@ public class CoinflipCommand extends RoutedCommand {
                 .argOptional("amount", new IntArg())
                 .exec((sender, ctx) -> {
                     handleRoot(sender, ctx.get("amount", Integer.class));
-                    return true;
                 });
 
         // coinflip reload
@@ -50,7 +49,6 @@ public class CoinflipCommand extends RoutedCommand {
                 .perm("nextcoinflip.admin")
                 .exec((sender, ctx) -> {
                     handleReload(sender);
-                    return true;
                 });
 
         // coinflip hand
@@ -58,7 +56,6 @@ public class CoinflipCommand extends RoutedCommand {
                 .alias("h")
                 .exec((sender, ctx) -> {
                     handleHand(sender);
-                    return true;
                 });
 
         // coinflip accept <player>
@@ -81,7 +78,6 @@ public class CoinflipCommand extends RoutedCommand {
                         }))
                 .exec((sender, ctx) -> {
                     handleAccept(sender, ctx.get("name", String.class));
-                    return true;
                 });
     }
 
