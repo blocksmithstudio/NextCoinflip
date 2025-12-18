@@ -115,7 +115,7 @@ public class CurrencySelectorGUI extends FastInv {
                 .replace("{wager}", Common.format(wager))
                 .replace("{currency}", currency.identifier());
 
-        NextCoinflip.DEFAULT_CONFIG.broadcast(PlaceholderAPI.setPlaceholders(player, message));
+        Common.broadcast(PlaceholderAPI.setPlaceholders(player, message));
     }
 
     private boolean hasExistingGameWithSameType(Player player, String coinflipType) {
