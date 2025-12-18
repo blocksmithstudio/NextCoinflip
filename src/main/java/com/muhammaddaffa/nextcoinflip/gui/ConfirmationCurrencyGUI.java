@@ -46,6 +46,7 @@ public class ConfirmationCurrencyGUI extends FastInv {
                             .add("{wager_digits}", Common.digits(game.getWager()))
                             .add("{wager_format}", Common.format(game.getWager()))
                             .add("{currency}", game.getCurrency().identifier())
+                            .add("{creator_name}", game.getCreatorName())
                             .add("{creator_display_name}", game.getCreatorDisplayName()))
                     .build();
 

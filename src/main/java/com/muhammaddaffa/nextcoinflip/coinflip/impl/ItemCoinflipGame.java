@@ -184,7 +184,8 @@ public class ItemCoinflipGame extends CoinflipGame {
         // Send notification to the creator
         Player creator = Bukkit.getPlayer(this.getCreator());
         HoverableMessage.sendHoverableItemMessage(creator, clone, NextCoinflip.DEFAULT_CONFIG.getString("messages.item-challenge")
-                .replace("{challenger_display_name}", challenger.getDisplayName()));
+                .replace("{challenger_display_name}", challenger.getDisplayName())
+                .replace("{challenger_name}", challenger.getName()));
         // Send clickable message
         HoverableMessage.sendClickableTextMessage(creator, NextCoinflip.DEFAULT_CONFIG.getString("messages.item-challenge-accept")
                 .replace("{player_name}", challenger.getName()), "/cf accept " + challenger.getName());

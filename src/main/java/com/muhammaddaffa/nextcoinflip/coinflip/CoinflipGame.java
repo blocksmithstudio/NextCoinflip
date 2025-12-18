@@ -38,6 +38,15 @@ public abstract class CoinflipGame {
     }
 
     @Nullable
+    public String getCreatorName() {
+        Player player = Bukkit.getPlayer(creator);
+        if (player == null) {
+            return "&cUnknown";
+        }
+        return player.getName();
+    }
+
+    @Nullable
     public String getCreatorDisplayName() {
         Player player = Bukkit.getPlayer(creator);
         if (player == null) {
