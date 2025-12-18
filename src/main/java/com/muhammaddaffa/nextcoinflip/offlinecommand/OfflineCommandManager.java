@@ -15,6 +15,11 @@ public class OfflineCommandManager implements Listener {
 
     private static final Map<UUID, List<String>> commandMap = new ConcurrentHashMap<>();
 
+    public static void addCommand(UUID uuid, String command) {
+        commandMap.computeIfAbsent(uuid, k -> new ArrayList<>())
+                .add(command);
+    }
+
     public static void executeCommand(UUID uuid, String command) {
         Player player = Bukkit.getPlayer(uuid);
         if (player == null) {

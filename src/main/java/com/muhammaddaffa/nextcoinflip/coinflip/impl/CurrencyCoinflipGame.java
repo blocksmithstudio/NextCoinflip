@@ -7,6 +7,7 @@ import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
 import com.muhammaddaffa.nextcoinflip.gui.ConfirmationCurrencyGUI;
+import com.muhammaddaffa.nextcoinflip.offlinecommand.OfflineCommandManager;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import com.muhammaddaffa.nextcoinflip.utils.SkullCreator;
@@ -56,8 +57,17 @@ public class CurrencyCoinflipGame extends CoinflipGame {
     }
 
     @Override
-    public void cancel() {
-        deposit(Bukkit.getPlayer(this.getCreator()), this.getWager());
+    public void cancel(boolean shutdown) {
+        Player player = Bukkit.getPlayer(this.getCreator());
+        if (shutdown) {
+            String command = currency.giveCommand()
+                .replace("{player}", player.getName())
+                .replace("{amount}", this.getWager() + "");
+            // Register offline command
+            OfflineCommandManager.addCommand(this.getCreator(), command);
+        } else {
+            deposit(player, this.getWager());
+        }
     }
 
     @Override

@@ -126,7 +126,7 @@ public abstract class CoinflipGame {
 
     public abstract ItemStack getItem();
 
-    public abstract void cancel();
+    public abstract void cancel(boolean shutdown);
 
     public abstract void finish(UUID winner, UUID loser);
 

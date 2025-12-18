@@ -152,7 +152,7 @@ public class GameSelectorGUI extends FastInv {
                 // If it's different from creator, start it
                 if (game.getCreator().equals(player.getUniqueId())) {
                     // Cancel the game
-                    game.cancel();
+                    game.cancel(false);
                     // Remove the game from the repository
                     CoinflipRepository.removeGame(game);
                     // Refresh the page

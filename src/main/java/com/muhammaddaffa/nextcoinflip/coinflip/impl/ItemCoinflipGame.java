@@ -68,7 +68,7 @@ public class ItemCoinflipGame extends CoinflipGame {
     }
 
     @Override
-    public void cancel() {
+    public void cancel(boolean shutdown) {
         // Add won item object for player
         UserRepository.getUser(this.getCreator()).addWonItem(offers[0]);
         // Get all challenger

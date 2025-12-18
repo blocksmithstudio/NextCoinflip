@@ -73,7 +73,8 @@ public final class NextCoinflip extends JavaPlugin {
     public void onDisable() {
         MDLib.shutdown();
         // On server stop, we should cancel all coinflip
-        CoinflipRepository.getGames().forEach(CoinflipGame::cancel);
+        CoinflipRepository.getGames().forEach(game -> game.cancel(true));
+        OfflineCommandManager.save();
         // Save all players data
         UserRepository.unloadAll();
     }
