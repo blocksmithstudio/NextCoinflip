@@ -10,6 +10,7 @@ import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -108,11 +109,13 @@ public class CurrencySelectorGUI extends FastInv {
     }
 
     private void sendBroadcast(Player player, double wager, Currency currency) {
-        NextCoinflip.DEFAULT_CONFIG.broadcast("messages.coinflip-create", new Placeholder()
-                .add("{name}", player.getName())
-                .add("{display_name}", player.getDisplayName())
-                .add("{wager}", Common.format(wager))
-                .add("{currency}", currency.identifier()));
+        String message = NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-create")
+                .replace("{player}", player.getName())
+                .replace("{display_name}", player.getDisplayName())
+                .replace("{wager}", Common.format(wager))
+                .replace("{currency}", currency.identifier());
+
+        NextCoinflip.DEFAULT_CONFIG.broadcast(PlaceholderAPI.setPlaceholders(player, message));
     }
 
     private boolean hasExistingGameWithSameType(Player player, String coinflipType) {

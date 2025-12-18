@@ -18,6 +18,7 @@ import com.muhammaddaffa.nextcoinflip.gui.CurrencySelectorGUI;
 import com.muhammaddaffa.nextcoinflip.gui.GameSelectorGUI;
 import com.muhammaddaffa.nextcoinflip.utils.HoverableMessage;
 import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -128,9 +129,12 @@ public class CoinflipCommand extends RoutedCommand {
                         CoinflipRepository.register(game);
 
                         // Send hoverable item message
-                        HoverableMessage.broadcastHoverableItemMessage(clone, NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-create")
+                        String message = NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-create")
+                                .replace("{player}", player.getName())
                                 .replace("{display_name}", player.getDisplayName())
-                                .replace("{currency}", ""));
+                                .replace("{currency}", "");
+
+                        HoverableMessage.broadcastHoverableItemMessage(clone, PlaceholderAPI.setPlaceholders(player, message));
 
                         // Close the inventory
                         player.closeInventory();
