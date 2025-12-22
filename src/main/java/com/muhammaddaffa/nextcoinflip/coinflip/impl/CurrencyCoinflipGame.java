@@ -82,8 +82,9 @@ public class CurrencyCoinflipGame extends CoinflipGame {
         loserUser.getStatistic().addLosses();
         loserUser.getStatistic().addLoseStreak();
         loserUser.getStatistic().addCurrencyEarnings(currency, -this.getWager());
-        // Make the loser pay the money
-        withdraw(Bukkit.getPlayer(loser), this.getWager());
+
+        // Double the amount of deposit on winning
+        // Only deposit no withdraw because withdraw already happened before the game finish
         deposit(Bukkit.getPlayer(winner), this.getWager() * 2);
 
         // Save the user here
@@ -152,6 +153,8 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                     starting = true;
                     // Set the challenger
                     this.setChallenger(clicker.getUniqueId());
+                    // Withdraw money from the challenger
+                    withdraw(clicker, this.getWager());
                     // Start the game
                     this.start();
                 })
