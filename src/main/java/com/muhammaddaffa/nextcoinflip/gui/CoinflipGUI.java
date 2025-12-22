@@ -193,7 +193,9 @@ public class CoinflipGUI extends FastInv {
 
             Placeholder placeholder = new Placeholder()
                     .add("{winner}", winnerPlayer.getDisplayName())
-                    .add("{loser}", loserPlayer.getDisplayName());
+                    .add("{winner_name}", winnerPlayer.getName())
+                    .add("{loser}", loserPlayer.getDisplayName())
+                    .add("{loser_name}", loserPlayer.getName());
 
             // Send message for both side
             if (game instanceof ItemCoinflipGame itemGame) {
