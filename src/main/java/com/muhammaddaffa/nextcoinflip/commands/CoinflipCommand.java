@@ -111,6 +111,11 @@ public class CoinflipCommand extends RoutedCommand {
                 NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.invalid-item");
                 return;
             }
+            // We check if there are more than 3 item coinflip game at a time
+            if (CoinflipRepository.getItemCoinflipGameAmount() >= 3) {
+                NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.cannot-create-item-coinflip");
+                return;
+            }
             // Otherwise, we should open the confirmation menu
             ItemStack clone = stack.clone();
             new ConfirmationItemCoinflipCreationGUI(stack)

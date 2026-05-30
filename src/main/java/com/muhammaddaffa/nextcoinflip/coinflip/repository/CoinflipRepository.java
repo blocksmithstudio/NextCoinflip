@@ -1,6 +1,7 @@
 package com.muhammaddaffa.nextcoinflip.coinflip.repository;
 
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.impl.ItemCoinflipGame;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +32,13 @@ public class CoinflipRepository {
 
     public static Collection<CoinflipGame> getGames() {
         return gameMap.values();
+    }
+
+    public static int getItemCoinflipGameAmount() {
+        return getGames().stream()
+                .filter(game -> game instanceof ItemCoinflipGame)
+                .toList()
+                .size();
     }
 
     public static void removeGame(CoinflipGame game) {
