@@ -7,18 +7,12 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class CurrencyRepository {
 
-    private static final Map<String, Currency> currencyMap = new LinkedHashMap<>() {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, Currency> eldest) {
-            return size() > 2;
-        }
-    };
+    private static final Map<String, Currency> currencyMap = new LinkedHashMap<>();
 
     @Nullable
     public static Currency getCurrency(String id) {
@@ -40,6 +34,7 @@ public class CurrencyRepository {
             return;
         }
 
+        int enabledCurrencies = 0;
         for (String id : config.getConfigurationSection("currencies").getKeys(false)) {
             boolean enabled = config.getBoolean("currencies." + id + ".enabled");
             int minWager = config.getInt("currencies." + id + ".minimum-wager");
@@ -48,6 +43,13 @@ public class CurrencyRepository {
             String balancePlaceholder = config.getString("currencies." + id + ".balance-placeholder");
             String takeCommand = config.getString("currencies." + id + ".take-command");
             String giveCommand = config.getString("currencies." + id + ".give-command");
+            if (enabled && enabledCurrencies >= 2) {
+                Logger.info("Skipped " + id + " currency because the lite version supports only 2 enabled currencies.");
+                continue;
+            }
+            if (enabled) {
+                enabledCurrencies++;
+            }
             // Create and store the currency
             currencyMap.put(id, new Currency(id, enabled, minWager, maxWager, identifier, balancePlaceholder, takeCommand, giveCommand));
             Logger.info("Loaded " + id + " currency!");
