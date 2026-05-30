@@ -29,11 +29,11 @@ public class CurrencySelectorGUI extends FastInv {
     public CurrencySelectorGUI(int wager) {
         super(NextCoinflip.CURRENCY_SELECTOR_MENU_CONFIG.getInt("size"),
                 Common.color(NextCoinflip.CURRENCY_SELECTOR_MENU_CONFIG.getString("title")));
-        this.wager = Math.abs(wager);
+        this.wager = (int) Math.min(Integer.MAX_VALUE, Math.abs((long) wager));
 
         for (Currency currency : CurrencyRepository.getCurrencies()) {
             if (!currency.enabled()) continue;
-            this.gameFactories.put(currency.id(), player -> new CurrencyCoinflipGame(player.getUniqueId(), currency, wager));
+            this.gameFactories.put(currency.id(), player -> new CurrencyCoinflipGame(player.getUniqueId(), currency, this.wager));
         }
 
         this.setAllItems();

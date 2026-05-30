@@ -16,6 +16,7 @@ public class UserQuitListener implements Listener {
         Player player = event.getPlayer();
         // Remove all things
         this.finishOwnGame(player);
+        this.cancelOwnWaitingGame(player);
         this.finishOtherGame(player);
         this.removeItemOffer(player);
     }
@@ -26,6 +27,16 @@ public class UserQuitListener implements Listener {
                 .filter(game -> game instanceof ItemCoinflipGame)
                 .map(game -> (ItemCoinflipGame) game)
                 .forEach(game -> game.cancelChallenge(player));
+    }
+
+    private void cancelOwnWaitingGame(Player player) {
+        CoinflipRepository.getGames(player)
+                .stream()
+                .filter(game -> !game.isStarting())
+                .forEach(game -> {
+                    game.cancel(false);
+                    CoinflipRepository.removeGame(game);
+                });
     }
 
     private void finishOtherGame(Player player) {

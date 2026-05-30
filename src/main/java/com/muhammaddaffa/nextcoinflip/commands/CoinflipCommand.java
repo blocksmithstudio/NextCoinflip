@@ -195,6 +195,11 @@ public class CoinflipCommand extends RoutedCommand {
         }
 
         Player other = Bukkit.getPlayer(challenger.uuid());
+        if (other == null || !game.canStart(challenger.uuid())) {
+            game.cancelChallenge(challenger.uuid());
+            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.not-valid");
+            return;
+        }
         ConfirmationItemCoinflipChallengerGUI menu = new ConfirmationItemCoinflipChallengerGUI(player, game.getOffers()[0], other, challenger.itemStack());
         // On cancel, cancel the coinflip
         menu.onCancel(() -> {

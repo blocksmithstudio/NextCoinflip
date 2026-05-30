@@ -1,6 +1,7 @@
 package com.muhammaddaffa.nextcoinflip.gui;
 
 import com.muhammaddaffa.mdlib.fastinv.FastInv;
+import com.muhammaddaffa.mdlib.task.handleTask.HandleTask;
 import com.muhammaddaffa.mdlib.utils.Common;
 import com.muhammaddaffa.mdlib.utils.Executor;
 import com.muhammaddaffa.mdlib.utils.ItemBuilder;
@@ -16,7 +17,6 @@ import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ public class GameSelectorGUI extends FastInv {
 
         this.setAllItems();
         // Refresh the gui every 5 tick
-        BukkitTask task = Executor.syncTimer(0L, 5L, this::setAllItems);
+        HandleTask task = Executor.syncTimer(0L, 5L, this::setAllItems);
         // Cancel the task on close
         this.addCloseHandler(event -> task.cancel());
     }
@@ -151,6 +151,11 @@ public class GameSelectorGUI extends FastInv {
                 SoundUtil.click(player);
                 // If it's different from creator, start it
                 if (game.getCreator().equals(player.getUniqueId())) {
+                    if (game.isStarting()) {
+                        NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.coinflip-already-started");
+                        SoundUtil.villagerNo(player);
+                        return;
+                    }
                     // Cancel the game
                     game.cancel(false);
                     // Remove the game from the repository

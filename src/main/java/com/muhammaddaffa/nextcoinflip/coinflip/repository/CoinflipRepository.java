@@ -49,6 +49,10 @@ public class CoinflipRepository {
         gameMap.remove(uuid);
     }
 
+    public static boolean contains(CoinflipGame game) {
+        return gameMap.get(game.getUniqueId()) == game;
+    }
+
     public static void register(CoinflipGame game) {
         gameMap.put(game.getUniqueId(), game);
     }

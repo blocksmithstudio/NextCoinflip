@@ -5,14 +5,13 @@ import com.muhammaddaffa.mdlib.utils.ItemBuilder;
 import com.muhammaddaffa.mdlib.utils.Placeholder;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
 import com.muhammaddaffa.nextcoinflip.gui.ConfirmationCurrencyGUI;
-import com.muhammaddaffa.nextcoinflip.offlinecommand.OfflineCommandManager;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import com.muhammaddaffa.nextcoinflip.utils.SkullCreator;
 import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -58,15 +57,9 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
     @Override
     public void cancel(boolean shutdown) {
-        Player player = Bukkit.getPlayer(this.getCreator());
-        if (shutdown) {
-            String command = currency.giveCommand()
-                .replace("{player}", player.getName())
-                .replace("{amount}", this.getWager() + "");
-            // Register offline command
-            OfflineCommandManager.addCommand(this.getCreator(), command);
-        } else {
-            deposit(player, this.getWager());
+        refund(this.getCreator(), shutdown);
+        if (this.getChallenger() != null) {
+            refund(this.getChallenger(), shutdown);
         }
     }
 
@@ -85,7 +78,7 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
         // Double the amount of deposit on winning
         // Only deposit no withdraw because withdraw already happened before the game finish
-        deposit(Bukkit.getPlayer(winner), this.getWager() * 2);
+        deposit(winner, this.getWager() * 2);
 
         // Save the user here
         winnerUser.save(true);
@@ -120,6 +113,18 @@ public class CurrencyCoinflipGame extends CoinflipGame {
         currency.giveBalance(player, amount);
     }
 
+    public void deposit(UUID uuid, int amount) {
+        currency.giveBalance(uuid, amount);
+    }
+
+    private void refund(UUID uuid, boolean queueOnly) {
+        if (queueOnly) {
+            currency.queueGiveBalance(uuid, this.getWager());
+        } else {
+            currency.giveBalance(uuid, this.getWager());
+        }
+    }
+
     @Override
     public void onClick(Player clicker) {
         // Open the confirmation menu gui
@@ -131,8 +136,9 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                     SoundUtil.click(clicker);
                 })
                 .onAccept(() -> {
-                    if (starting) {
+                    if (starting || !CoinflipRepository.contains(this) || !this.canStart(clicker.getUniqueId())) {
                         NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.coinflip-already-started");
+                        clicker.closeInventory();
                         SoundUtil.villagerNo(clicker);
                         return;
                     }
@@ -156,7 +162,14 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                     // Withdraw money from the challenger
                     withdraw(clicker, this.getWager());
                     // Start the game
-                    this.start();
+                    if (!this.start()) {
+                        deposit(clicker, this.getWager());
+                        this.setChallenger(null);
+                        starting = false;
+                        clicker.closeInventory();
+                        NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.coinflip-already-started");
+                        SoundUtil.villagerNo(clicker);
+                    }
                 })
                 .open(clicker);
     }

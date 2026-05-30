@@ -4,6 +4,8 @@ import com.muhammaddaffa.nextcoinflip.offlinecommand.OfflineCommandManager;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 public record Currency(
         String id,
         boolean enabled,
@@ -37,19 +39,35 @@ public record Currency(
     }
 
     public void giveBalance(Player player, int amount) {
-        String command = this.giveCommand()
-                .replace("{player}", player.getName())
-                .replace("{amount}", amount + "");
-        // Execute the command
-        OfflineCommandManager.executeCommand(player.getUniqueId(), command);
+        giveBalance(player.getUniqueId(), amount);
+    }
+
+    public void giveBalance(UUID uuid, int amount) {
+        OfflineCommandManager.executeCommand(uuid, prepareGiveCommand(amount));
+    }
+
+    public void queueGiveBalance(UUID uuid, int amount) {
+        OfflineCommandManager.addCommand(uuid, prepareGiveCommand(amount));
     }
 
     public void takeBalance(Player player, int amount) {
-        String command = this.takeCommand()
-                .replace("{player}", player.getName())
-                .replace("{amount}", amount + "");
-        // Execute the command
-        OfflineCommandManager.executeCommand(player.getUniqueId(), command);
+        takeBalance(player.getUniqueId(), amount);
+    }
+
+    public void takeBalance(UUID uuid, int amount) {
+        OfflineCommandManager.executeCommand(uuid, prepareTakeCommand(amount));
+    }
+
+    private String prepareGiveCommand(int amount) {
+        return prepareCommand(this.giveCommand(), amount);
+    }
+
+    private String prepareTakeCommand(int amount) {
+        return prepareCommand(this.takeCommand(), amount);
+    }
+
+    private String prepareCommand(String template, int amount) {
+        return template.replace("{amount}", amount + "");
     }
 
 }

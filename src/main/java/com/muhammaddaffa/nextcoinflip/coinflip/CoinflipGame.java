@@ -9,8 +9,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -116,7 +116,16 @@ public abstract class CoinflipGame {
     }
 
     public List<Player> getPlayers() {
-        return List.of(Bukkit.getPlayer(creator), Bukkit.getPlayer(challenger));
+        List<Player> players = new ArrayList<>();
+        Player creator = Bukkit.getPlayer(this.creator);
+        Player challenger = this.challenger == null ? null : Bukkit.getPlayer(this.challenger);
+        if (creator != null) {
+            players.add(creator);
+        }
+        if (challenger != null) {
+            players.add(challenger);
+        }
+        return players;
     }
 
     public CoinflipGUI getGameMenu() {
@@ -139,7 +148,17 @@ public abstract class CoinflipGame {
 
     public abstract void finish(UUID winner, UUID loser);
 
-    public void start() {
+    public boolean canStart(UUID challenger) {
+        if (challenger == null || this.isStarting() || !CoinflipRepository.contains(this)) {
+            return false;
+        }
+        return Bukkit.getPlayer(this.creator) != null && Bukkit.getPlayer(challenger) != null;
+    }
+
+    public boolean start() {
+        if (!canStart(this.challenger)) {
+            return false;
+        }
         // We should directly open the game menu and immediately plays
         CoinflipGUI menu = new CoinflipGUI(this, winner -> {
             this.finish(winner, this.getOpposite(winner));
@@ -148,6 +167,7 @@ public abstract class CoinflipGame {
         });
         // Open the menu for both player
         this.getPlayers().forEach(menu::open);
+        return true;
     }
 
     public abstract void onClick(Player clicker);

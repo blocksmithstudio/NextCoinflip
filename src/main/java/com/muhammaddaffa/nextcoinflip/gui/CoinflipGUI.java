@@ -39,8 +39,12 @@ public class CoinflipGUI extends FastInv {
 
         this.addCloseHandler(event -> {
             // Open back this inventory
-            if (!canClose) {
-                Executor.sync(() -> this.open((Player) event.getPlayer()));
+            if (!canClose && event.getPlayer() instanceof Player player && player.isOnline()) {
+                Executor.sync(() -> {
+                    if (!canClose && player.isOnline()) {
+                        this.open(player);
+                    }
+                });
             }
         });
 
@@ -57,6 +61,9 @@ public class CoinflipGUI extends FastInv {
     }
 
     private void playSound(Player player, Sound sound) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
         Common.playSound(player, sound);
     }
 
@@ -108,6 +115,7 @@ public class CoinflipGUI extends FastInv {
         private final Player creator, challenger;
         private final ItemStack creatorHead, challengerHead;
         private final CoinflipGUI menu;
+        private boolean finished = false;
 
         public CoinflipTask(CoinflipGame game, CoinflipGUI menu) {
             this.game = game;
@@ -120,6 +128,13 @@ public class CoinflipGUI extends FastInv {
 
         @Override
         public void run() {
+            if (finished) {
+                return;
+            }
+            if (creator == null || challenger == null || !creator.isOnline() || !challenger.isOnline()) {
+                finish();
+                return;
+            }
             // Increment the tick counter
             tickCounter++;
 
@@ -131,8 +146,12 @@ public class CoinflipGUI extends FastInv {
             menu.setItems(challengerFillSlots, new ItemBuilder(Material.BLUE_STAINED_GLASS_PANE).name(" ").build());
 
             if (game instanceof ItemCoinflipGame icg) {
-                menu.setItem(creatorItemSlot, icg.getOffers()[0].clone());
-                menu.setItem(challengerItemSlot, icg.getOffers()[1].clone());
+                if (icg.getOffers()[0] != null) {
+                    menu.setItem(creatorItemSlot, icg.getOffers()[0].clone());
+                }
+                if (icg.getOffers()[1] != null) {
+                    menu.setItem(challengerItemSlot, icg.getOffers()[1].clone());
+                }
             }
 
             if (tickCounter >= delay) {
@@ -170,6 +189,10 @@ public class CoinflipGUI extends FastInv {
         }
 
         public void finish() {
+            if (finished) {
+                return;
+            }
+            finished = true;
             // Determine winner
             UUID winner = ThreadLocalRandom.current().nextBoolean() ? game.getCreator() : game.getChallenger();
             UUID loser = game.getOpposite(winner);
@@ -192,38 +215,46 @@ public class CoinflipGUI extends FastInv {
             menu.playSound(Bukkit.getPlayer(game.getOpposite(winner)), Sound.ENTITY_VILLAGER_NO);
 
             Placeholder placeholder = new Placeholder()
-                    .add("{winner}", winnerPlayer.getDisplayName())
-                    .add("{winner_name}", winnerPlayer.getName())
-                    .add("{loser}", loserPlayer.getDisplayName())
-                    .add("{loser_name}", loserPlayer.getName());
+                    .add("{winner}", winnerPlayer == null ? "&cUnknown" : winnerPlayer.getDisplayName())
+                    .add("{winner_name}", winnerPlayer == null ? "Unknown" : winnerPlayer.getName())
+                    .add("{loser}", loserPlayer == null ? "&cUnknown" : loserPlayer.getDisplayName())
+                    .add("{loser_name}", loserPlayer == null ? "Unknown" : loserPlayer.getName());
 
             // Send message for both side
             if (game instanceof ItemCoinflipGame itemGame) {
                 placeholder.add("{currency}", "");
-                ItemStack stack = itemGame.getOffers()[game.getPlayers().indexOf(loserPlayer)];
+                ItemStack stack = itemGame.getOffers()[loser.equals(game.getCreator()) ? 0 : 1];
                 // Send to winner
-                HoverableMessage.sendHoverableItemMessage(
-                        winnerPlayer,
-                        stack,
-                        NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-winner"),
-                        placeholder
-                );
+                if (winnerPlayer != null && stack != null) {
+                    HoverableMessage.sendHoverableItemMessage(
+                            winnerPlayer,
+                            stack,
+                            NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-winner"),
+                            placeholder
+                    );
+                }
 
-                HoverableMessage.sendHoverableItemMessage(
-                        loserPlayer,
-                        stack,
-                        NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-loser"),
-                        placeholder
-                );
+                if (loserPlayer != null && stack != null) {
+                    HoverableMessage.sendHoverableItemMessage(
+                            loserPlayer,
+                            stack,
+                            NextCoinflip.DEFAULT_CONFIG.getString("messages.coinflip-loser"),
+                            placeholder
+                    );
+                }
 
             } else if(game instanceof CurrencyCoinflipGame currencyGame) {
                 // Add more placeholders
                 placeholder.add("{wager}", Common.format(currencyGame.getWager()))
                         .add("{currency}", " " + currencyGame.getCurrency().identifier());
                 // Send message to the winner
-                NextCoinflip.DEFAULT_CONFIG.sendMessage(winnerPlayer, "messages.coinflip-winner", placeholder);
+                if (winnerPlayer != null) {
+                    NextCoinflip.DEFAULT_CONFIG.sendMessage(winnerPlayer, "messages.coinflip-winner", placeholder);
+                }
                 // Send message to the loser
-                NextCoinflip.DEFAULT_CONFIG.sendMessage(loserPlayer, "messages.coinflip-loser", placeholder);
+                if (loserPlayer != null) {
+                    NextCoinflip.DEFAULT_CONFIG.sendMessage(loserPlayer, "messages.coinflip-loser", placeholder);
+                }
             }
 
             // Make player can close this menu
