@@ -8,11 +8,17 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class CurrencyRepository {
 
-    private static final Map<String, Currency> currencyMap = new HashMap<>();
+    private static final Map<String, Currency> currencyMap = new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Currency> eldest) {
+            return size() > 2;
+        }
+    };
 
     @Nullable
     public static Currency getCurrency(String id) {
@@ -46,6 +52,7 @@ public class CurrencyRepository {
             currencyMap.put(id, new Currency(id, enabled, minWager, maxWager, identifier, balancePlaceholder, takeCommand, giveCommand));
             Logger.info("Loaded " + id + " currency!");
         }
+
         Logger.info("Successfully loaded " + currencyMap.size() + " currencies!");
     }
 
