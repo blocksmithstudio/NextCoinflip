@@ -126,6 +126,18 @@ public class CoinflipCommand extends RoutedCommand {
                         SoundUtil.click(player);
                     })
                     .onAccept(() -> {
+                        if (stack.getType() == Material.AIR || stack.getAmount() <= 0) {
+                            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.invalid-item");
+                            player.closeInventory();
+                            SoundUtil.villagerNo(player);
+                            return;
+                        }
+                        if (CoinflipRepository.getItemCoinflipGameAmount() >= 3) {
+                            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.cannot-create-item-coinflip");
+                            player.closeInventory();
+                            SoundUtil.villagerNo(player);
+                            return;
+                        }
                         // Register an item coinflip
                         ItemCoinflipGame game = new ItemCoinflipGame(player.getUniqueId(), stack);
                         // Remove the item from player's inventory
@@ -200,7 +212,7 @@ public class CoinflipCommand extends RoutedCommand {
         menu.onAccept(() -> {
             SoundUtil.click(player);
             // Check if the offer is still valid
-            if (game.getChallenger(target) == null) {
+            if (game.getChallenger(target) == null || !game.canStart(challenger.uuid())) {
                 // Sends message
                 NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.not-valid");
                 // Close the inventory
@@ -210,7 +222,13 @@ public class CoinflipCommand extends RoutedCommand {
             // On accept, set the opponent, and start coinflip
             game.setChallenger(challenger.uuid());
             game.getOffers()[1] = challenger.itemStack();
-            game.start();
+            if (!game.start()) {
+                game.setChallenger(null);
+                game.getOffers()[1] = null;
+                NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.not-valid");
+                player.closeInventory();
+                return;
+            }
             // Cancel all offer from other player
             game.cancelAllExcept(challenger);
         });
