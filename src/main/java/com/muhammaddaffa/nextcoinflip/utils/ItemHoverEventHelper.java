@@ -33,7 +33,7 @@ public final class ItemHoverEventHelper {
                     return new HoverEvent(HoverEvent.Action.SHOW_ITEM, new ComponentsShowItem(id, count, components));
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception | LinkageError ignored) {
             // Paper-specific API not available, or old version; fall back to legacy tag path below
         }
         // There was either no components field (<1.20.5) or there was an error, regardless attempt the legacy method
@@ -49,7 +49,7 @@ public final class ItemHoverEventHelper {
             nbt = bukkitItem.getItemMeta().getAsString();
             final net.md_5.bungee.api.chat.ItemTag tag = (nbt != null && !nbt.isEmpty()) ? net.md_5.bungee.api.chat.ItemTag.ofNbt(nbt) : null;
             return new HoverEvent(HoverEvent.Action.SHOW_ITEM, new net.md_5.bungee.api.chat.hover.content.Item(id, count, tag));
-        } catch (Exception ignored) {
+        } catch (Exception | LinkageError ignored) {
             // Some servers may not expose ItemMeta#getAsString; continue with null nbt
             // If this is an issue for you, take a look at using Item NBT API to get the nbt string
         }
