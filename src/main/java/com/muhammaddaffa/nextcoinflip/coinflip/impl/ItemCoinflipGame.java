@@ -63,7 +63,7 @@ public class ItemCoinflipGame extends CoinflipGame {
                 .name(config.getString("wager-items.item.display-name"))
                 .lore(lore)
                 .placeholder(getDefaultPlaceholders()
-                        .add("{item_display_name}", itemDisplayName)
+                        .add("{item_display_name}", "&f" + itemDisplayName)
                         .add("{item_amount}", stack.getAmount()))
                 .build();
     }
