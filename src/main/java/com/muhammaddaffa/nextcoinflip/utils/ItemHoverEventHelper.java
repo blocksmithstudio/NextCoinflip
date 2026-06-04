@@ -33,7 +33,7 @@ public final class ItemHoverEventHelper {
                     return new HoverEvent(HoverEvent.Action.SHOW_ITEM, new ComponentsShowItem(id, count, components));
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception | LinkageError ignored) {
             // Paper-specific API not available, or old version; fall back to legacy tag path below
         }
         // There was either no components field (<1.20.5) or there was an error, regardless attempt the legacy method

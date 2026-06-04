@@ -5,6 +5,7 @@ import com.muhammaddaffa.mdlib.utils.ItemBuilder;
 import com.muhammaddaffa.mdlib.utils.WordUtils;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.gui.ConfirmationItemCoinflipChallengerGUI;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
@@ -62,7 +63,7 @@ public class ItemCoinflipGame extends CoinflipGame {
                 .name(config.getString("wager-items.item.display-name"))
                 .lore(lore)
                 .placeholder(getDefaultPlaceholders()
-                        .add("{item_display_name}", itemDisplayName)
+                        .add("{item_display_name}", "&f" + itemDisplayName)
                         .add("{item_amount}", stack.getAmount()))
                 .build();
     }
@@ -70,14 +71,16 @@ public class ItemCoinflipGame extends CoinflipGame {
     @Override
     public void cancel(boolean shutdown) {
         // Add won item object for player
-        UserRepository.getUser(this.getCreator()).addWonItem(offers[0]);
+        this.refundItem(this.getCreator(), offers[0], !shutdown);
         // Get all challenger
-        for (ChallengerDetails detail : this.challengerMap.values()) {
+        for (ChallengerDetails detail : new ArrayList<>(this.challengerMap.values())) {
             Player player = Bukkit.getPlayer(detail.uuid());
             // Cancel the challenge
-            this.cancelChallenge(player);
+            this.cancelChallenge(detail.uuid(), !shutdown);
             // Sends message
-            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.offer-cancelled");
+            if (player != null) {
+                NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.offer-cancelled");
+            }
         }
     }
 
@@ -93,8 +96,10 @@ public class ItemCoinflipGame extends CoinflipGame {
         loserUser.getStatistic().addLoseStreak();
 
         // Give player both items from the offers
-        for (ItemStack stack : List.of(offers)) {
-            UserRepository.getUser(winner).addWonItem(stack);
+        for (ItemStack stack : offers) {
+            if (stack != null) {
+                UserRepository.getUser(winner).addWonItem(stack);
+            }
         }
 
         // Save the user here
@@ -104,6 +109,11 @@ public class ItemCoinflipGame extends CoinflipGame {
 
     @Override
     public void onClick(Player clicker) {
+        Player creator = Bukkit.getPlayer(getCreator());
+        if (creator == null || !CoinflipRepository.contains(this) || this.isStarting()) {
+            NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.not-valid");
+            return;
+        }
         // Check if player already has an offer
         if (getChallenger(clicker.getName()) != null) {
             NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.already-offered");
@@ -115,7 +125,7 @@ public class ItemCoinflipGame extends CoinflipGame {
             return;
         }
         // Open the menu for the clicker
-        ConfirmationItemCoinflipChallengerGUI menu = new ConfirmationItemCoinflipChallengerGUI(clicker, stack, Bukkit.getPlayer(getCreator()), getOffers()[0]);
+        ConfirmationItemCoinflipChallengerGUI menu = new ConfirmationItemCoinflipChallengerGUI(clicker, stack, creator, getOffers()[0]);
         menu.onCancel(() -> {
             clicker.closeInventory();
             // Play sounds
@@ -124,7 +134,12 @@ public class ItemCoinflipGame extends CoinflipGame {
         });
         menu.onAccept(() -> {
             // Add challenger
-            this.addChallenger(clicker, stack);
+            if (!this.addChallenger(clicker, stack)) {
+                NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.not-valid");
+                Common.playSound(clicker, Sound.ENTITY_VILLAGER_NO);
+                clicker.closeInventory();
+                return;
+            }
             // Close inventory for the player
             clicker.closeInventory();
             // Play sounds
@@ -148,27 +163,53 @@ public class ItemCoinflipGame extends CoinflipGame {
     }
 
     public void cancelChallenge(Player player) {
-        ChallengerDetails details = this.challengerMap.remove(player.getName().toLowerCase());
+        if (player == null) {
+            return;
+        }
+        this.cancelChallenge(player.getUniqueId());
+    }
+
+    public void cancelChallenge(UUID uuid) {
+        this.cancelChallenge(uuid, true);
+    }
+
+    private void cancelChallenge(UUID uuid, boolean asyncSave) {
+        String key = this.challengerMap.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().uuid().equals(uuid))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+        if (key == null) {
+            return;
+        }
+        ChallengerDetails details = this.challengerMap.remove(key);
         if (details != null) {
-            UserRepository.getUser(player).addWonItem(details.itemStack());
+            this.refundItem(details.uuid(), details.itemStack(), asyncSave);
         }
     }
 
     public void cancelAllExcept(ChallengerDetails challenger) {
-        this.challengerMap.forEach((name, detail) -> {
+        new ArrayList<>(this.challengerMap.values()).forEach(detail -> {
             if (!detail.uuid().equals(challenger.uuid())) {
                 Player other = Bukkit.getPlayer(detail.uuid());
                 // Cancel the challenge
-                this.cancelChallenge(other);
+                this.cancelChallenge(detail.uuid());
                 // Sends message
-                NextCoinflip.DEFAULT_CONFIG.sendMessage(other, "messages.offer-cancelled");
+                if (other != null) {
+                    NextCoinflip.DEFAULT_CONFIG.sendMessage(other, "messages.offer-cancelled");
+                }
             }
         });
     }
 
-    public void addChallenger(Player challenger, ItemStack stack) {
-        if (this.isStarting()) {
-            return;
+    public boolean addChallenger(Player challenger, ItemStack stack) {
+        if (this.isStarting() || !CoinflipRepository.contains(this) || stack == null || stack.getType() == Material.AIR || stack.getAmount() <= 0) {
+            return false;
+        }
+        Player creator = Bukkit.getPlayer(this.getCreator());
+        if (creator == null) {
+            return false;
         }
         // First, make the item stack clone first
         ItemStack clone = stack.clone();
@@ -182,13 +223,22 @@ public class ItemCoinflipGame extends CoinflipGame {
         NextCoinflip.DEFAULT_CONFIG.sendMessage(challenger, "messages.item-offer");
 
         // Send notification to the creator
-        Player creator = Bukkit.getPlayer(this.getCreator());
         HoverableMessage.sendHoverableItemMessage(creator, clone, NextCoinflip.DEFAULT_CONFIG.getString("messages.item-challenge")
                 .replace("{challenger_display_name}", challenger.getDisplayName())
                 .replace("{challenger_name}", challenger.getName()));
         // Send clickable message
         HoverableMessage.sendClickableTextMessage(creator, NextCoinflip.DEFAULT_CONFIG.getString("messages.item-challenge-accept")
                 .replace("{player_name}", challenger.getName()), "/cf accept " + challenger.getName());
+        return true;
+    }
+
+    private void refundItem(UUID uuid, ItemStack stack, boolean asyncSave) {
+        if (stack == null || stack.getType() == Material.AIR || stack.getAmount() <= 0) {
+            return;
+        }
+        User user = UserRepository.getUser(uuid);
+        user.addWonItem(stack);
+        user.save(asyncSave);
     }
 
     public record ChallengerDetails(

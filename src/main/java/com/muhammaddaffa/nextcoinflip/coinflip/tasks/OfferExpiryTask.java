@@ -26,9 +26,11 @@ public class OfferExpiryTask extends BukkitRunnable {
                 if (TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - detail.timestamp()) > 120) {
                     Player player = Bukkit.getPlayer(detail.uuid());
                     // Remove the challenge
-                    game.cancelChallenge(player);
+                    game.cancelChallenge(detail.uuid());
                     // Sends message
-                    NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.offer-expired");
+                    if (player != null) {
+                        NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.offer-expired");
+                    }
                 }
             }
 
