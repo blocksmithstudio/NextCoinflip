@@ -6,7 +6,7 @@
 
     <groupId>com.muhammaddaffa</groupId>
     <artifactId>NextCoinflip</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <packaging>jar</packaging>
 
     <name>NextCoinflip</name>
@@ -124,7 +124,7 @@
         <dependency>
             <groupId>com.github.mdaffa48</groupId>
             <artifactId>MDLib</artifactId>
-            <version>2.2.8</version>
+            <version>2.3.7</version>
         </dependency>
     </dependencies>
 </project>
