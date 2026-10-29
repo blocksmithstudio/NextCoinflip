@@ -4,15 +4,18 @@ import com.muhammaddaffa.mdlib.utils.Common;
 import com.muhammaddaffa.mdlib.utils.Placeholder;
 import com.muhammaddaffa.mdlib.utils.WordUtils;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.*;
-import net.md_5.bungee.api.chat.hover.content.Item;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 public class HoverableMessage {
+
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
 
     public static void broadcastHoverableItemMessage(ItemStack stack, String message) {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -53,16 +56,10 @@ public class HoverableMessage {
                 .replace("{item_amount}", itemAmount + ""));
 
         // Create the hoverable component for the item
-        TextComponent hoverableComponent = new TextComponent(TextComponent.fromLegacyText(hoverMessage));
-        hoverableComponent.setHoverEvent(ItemHoverEventHelper.createFrom(stack));
-
-        // Create the final message
-        TextComponent finalMessage = new TextComponent(TextComponent.fromLegacyText(beforeWager));
-        finalMessage.addExtra(hoverableComponent);
-        finalMessage.addExtra(new TextComponent(TextComponent.fromLegacyText(afterWager)));
-
-        // Send the message to the player
-        player.spigot().sendMessage(finalMessage);
+        Component hoverableComponent = LEGACY.deserialize(hoverMessage).hoverEvent(stack.asHoverEvent());
+        player.sendMessage(LEGACY.deserialize(beforeWager)
+                .append(hoverableComponent)
+                .append(LEGACY.deserialize(afterWager)));
     }
 
     public static void sendClickableTextMessage(Player player, String message, String command) {
@@ -73,23 +70,12 @@ public class HoverableMessage {
 
         // Create the clickable component
         String clickText = Common.color(NextCoinflip.DEFAULT_CONFIG.getString("item-wager.accept-button"));
-        TextComponent clickableComponent = new TextComponent(TextComponent.fromLegacyText(clickText));
-        clickableComponent.setClickEvent(new ClickEvent(
-                ClickEvent.Action.RUN_COMMAND,
-                command
-        ));
-        clickableComponent.setHoverEvent(new HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                new ComponentBuilder(command).color(ChatColor.GREEN).create()
-        ));
-
-        // Create the final message
-        TextComponent finalMessage = new TextComponent(TextComponent.fromLegacyText(beforeClick));
-        finalMessage.addExtra(clickableComponent);
-        finalMessage.addExtra(new TextComponent(TextComponent.fromLegacyText(afterClick)));
-
-        // Send the message to the player
-        player.spigot().sendMessage(finalMessage);
+        Component clickableComponent = LEGACY.deserialize(clickText)
+                .clickEvent(ClickEvent.runCommand(command))
+                .hoverEvent(Component.text(command, NamedTextColor.GREEN));
+        player.sendMessage(LEGACY.deserialize(beforeClick)
+                .append(clickableComponent)
+                .append(LEGACY.deserialize(afterClick)));
     }
 
 }

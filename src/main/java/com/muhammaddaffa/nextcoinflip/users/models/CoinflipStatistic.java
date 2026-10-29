@@ -14,7 +14,7 @@ public class CoinflipStatistic {
     private int losses;
     private int loseStreak;
 
-    private final Map<String, Integer> earningsMap = new HashMap<>();
+    private final Map<String, Long> earningsMap = new HashMap<>();
 
     public int getWins() {
         return wins;
@@ -67,11 +67,11 @@ public class CoinflipStatistic {
         return (double) wins / (wins + losses) * 100;
     }
 
-    public int getCurrencyEarnings(Currency currency) {
-        return earningsMap.getOrDefault(currency.id(), 0);
+    public long getCurrencyEarnings(Currency currency) {
+        return earningsMap.getOrDefault(currency.id(), 0L);
     }
 
-    public void setCurrencyEarnings(Currency currency, int amount) {
+    public void setCurrencyEarnings(Currency currency, long amount) {
         earningsMap.put(currency.id(), amount);
     }
 
@@ -103,7 +103,7 @@ public class CoinflipStatistic {
         String[] split = serialized.split("=");
         Currency currency = CurrencyRepository.getCurrency(split[0]);
         if (currency != null) {
-            setCurrencyEarnings(currency, Integer.parseInt(split[1]));
+            setCurrencyEarnings(currency, Long.parseLong(split[1]));
         }
     }
 

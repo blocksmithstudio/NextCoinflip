@@ -43,3 +43,16 @@ buildNumber.properties
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
+# Local tooling, credentials and IDE files
+.tools/
+.idea/
+*.iml
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.sqlite*
+.agents/
+.codex/
+

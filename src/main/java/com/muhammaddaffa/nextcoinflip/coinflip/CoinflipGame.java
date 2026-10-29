@@ -20,6 +20,7 @@ public abstract class CoinflipGame {
     private UUID challenger;
 
     private CoinflipGUI gameMenu;
+    private boolean settled;
 
     private final long timestamp;
 
@@ -149,10 +150,22 @@ public abstract class CoinflipGame {
     public abstract void finish(UUID winner, UUID loser);
 
     public boolean canStart(UUID challenger) {
-        if (challenger == null || this.isStarting() || !CoinflipRepository.contains(this)) {
+        if (challenger == null || creator.equals(challenger) || settled || this.isStarting() || !CoinflipRepository.contains(this)) {
             return false;
         }
         return Bukkit.getPlayer(this.creator) != null && Bukkit.getPlayer(challenger) != null;
+    }
+
+    protected boolean settle() {
+        if (settled) {
+            return false;
+        }
+        settled = true;
+        CoinflipRepository.removeGame(this);
+        if (gameMenu != null) {
+            gameMenu.stop();
+        }
+        return true;
     }
 
     public boolean start() {

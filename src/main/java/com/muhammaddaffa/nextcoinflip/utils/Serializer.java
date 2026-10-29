@@ -2,7 +2,6 @@ package com.muhammaddaffa.nextcoinflip.utils;
 
 import com.muhammaddaffa.mdlib.utils.ItemStackSerializer;
 import org.bukkit.inventory.ItemStack;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.*;
 

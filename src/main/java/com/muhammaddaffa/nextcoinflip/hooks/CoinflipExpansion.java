@@ -2,11 +2,11 @@ package com.muhammaddaffa.nextcoinflip.hooks;
 
 import com.muhammaddaffa.mdlib.utils.Common;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
+import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,7 +24,7 @@ public class CoinflipExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getVersion() {
-        return "1.0.0";
+        return NextCoinflip.getInstance().getPluginMeta().getVersion();
     }
 
     @Override
@@ -39,6 +39,7 @@ public class CoinflipExpansion extends PlaceholderExpansion {
 
     @Override
     public String onPlaceholderRequest(Player player, String params) {
+        if (player == null) return null;
         User user = UserRepository.getUser(player.getUniqueId());
         if (params.equalsIgnoreCase("wins")) {
             return user.getStatistic().getWins() + "";

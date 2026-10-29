@@ -42,6 +42,13 @@ public class CurrencyRepository {
             String balancePlaceholder = config.getString("currencies." + id + ".balance-placeholder");
             String takeCommand = config.getString("currencies." + id + ".take-command");
             String giveCommand = config.getString("currencies." + id + ".give-command");
+            if (balancePlaceholder == null || balancePlaceholder.isBlank()
+                    || takeCommand == null || takeCommand.isBlank()
+                    || giveCommand == null || giveCommand.isBlank()
+                    || minWager < 0 || (maxWager > 0 && maxWager < Math.max(1, minWager))) {
+                Logger.severe("Skipping invalid currency configuration: " + id);
+                continue;
+            }
             // Create and store the currency
             currencyMap.put(id, new Currency(id, enabled, minWager, maxWager, identifier, balancePlaceholder, takeCommand, giveCommand));
             Logger.info("Loaded " + id + " currency!");

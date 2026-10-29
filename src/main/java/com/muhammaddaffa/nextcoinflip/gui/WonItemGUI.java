@@ -75,10 +75,13 @@ public class WonItemGUI extends FastInv {
                     NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.inventory-full");
                     return;
                 }
-                // Give the item to the player
-                Common.addInventoryItem(player, original);
                 // Remove the item from the list
-                user.removeWonItem(item);
+                if (!user.removeWonItem(item)) {
+                    NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.not-valid");
+                    player.closeInventory();
+                    return;
+                }
+                Common.addInventoryItem(player, original.clone());
                 // Play sounds
                 SoundUtil.click(player);
                 SoundUtil.pling(player);

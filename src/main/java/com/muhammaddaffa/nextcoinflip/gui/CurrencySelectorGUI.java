@@ -15,26 +15,16 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 public class CurrencySelectorGUI extends FastInv {
 
     private final int wager;
-    private final Map<String, Function<Player, CurrencyCoinflipGame>> gameFactories = new ConcurrentHashMap<>();
 
     public CurrencySelectorGUI(int wager) {
         super(NextCoinflip.CURRENCY_SELECTOR_MENU_CONFIG.getInt("size"),
                 Common.color(NextCoinflip.CURRENCY_SELECTOR_MENU_CONFIG.getString("title")));
-        this.wager = Math.abs(wager);
-
-        for (Currency currency : CurrencyRepository.getCurrencies()) {
-            if (!currency.enabled()) continue;
-            this.gameFactories.put(currency.id(), player -> new CurrencyCoinflipGame(player.getUniqueId(), currency, wager));
-        }
+        this.wager = wager;
 
         this.setAllItems();
     }
@@ -55,26 +45,31 @@ public class CurrencySelectorGUI extends FastInv {
     }
 
     private void handleCoinflipSelection(Player player, String type) {
-        type = type.toLowerCase();
+        type = type.toLowerCase(java.util.Locale.ROOT);
 
-        if (!gameFactories.containsKey(type)) {
+        if (CurrencyRepository.getCurrency(type) == null) {
             NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.invalid-type");
             return;
         }
 
-        CurrencyCoinflipGame game = gameFactories.get(type).apply(player);
-        Currency currency = game.getCurrency();
+        Currency currency = CurrencyRepository.getCurrency(type);
+        if (currency == null || !currency.enabled() || !CurrencyCoinflipGame.isValidWager(this.wager)) {
+            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.invalid-wager");
+            playFailedSounds(player);
+            player.closeInventory();
+            return;
+        }
 
-        if (this.wager < Math.max(1, game.getMinimumWager())) {
-            sendMessage(player, "messages.minimum-required", Math.max(1, game.getMinimumWager()), currency);
+        if (this.wager < Math.max(1, currency.minWager())) {
+            sendMessage(player, "messages.minimum-required", Math.max(1, currency.minWager()), currency);
             playFailedSounds(player);
             // Close the inventory
             player.closeInventory();
             return;
         }
 
-        if (game.getMaximumWager() > 0 && this.wager > game.getMaximumWager()) {
-            sendMessage(player, "messages.maximum-reached", game.getMaximumWager(), currency);
+        if (currency.maxWager() > 0 && this.wager > currency.maxWager()) {
+            sendMessage(player, "messages.maximum-reached", currency.maxWager(), currency);
             playFailedSounds(player);
             // Close the inventory
             player.closeInventory();
@@ -82,8 +77,9 @@ public class CurrencySelectorGUI extends FastInv {
         }
 
         // Check if player has enough wager
+        CurrencyCoinflipGame game = new CurrencyCoinflipGame(player.getUniqueId(), currency, this.wager);
         if (!game.hasEnough(player)) {
-            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.not-enough-balance", new Placeholder()
+            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.balance-not-enough", new Placeholder()
                     .add("{currency}", currency.identifier()));
             // Failed to create a coinflip game
             playFailedSounds(player);
@@ -92,9 +88,13 @@ public class CurrencySelectorGUI extends FastInv {
         }
 
         if (!hasExistingGameWithSameType(player, type)) {
-            CoinflipRepository.register(game);
             // On game registered, withdraw the amount of wager from player
-            game.withdraw(player, game.getWager());
+            if (!game.withdraw(player, game.getWager())) {
+                playFailedSounds(player);
+                player.closeInventory();
+                return;
+            }
+            CoinflipRepository.register(game);
 
             sendBroadcast(player, this.wager, currency);
             player.closeInventory();

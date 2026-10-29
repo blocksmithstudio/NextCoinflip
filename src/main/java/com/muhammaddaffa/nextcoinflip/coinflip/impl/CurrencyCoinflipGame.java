@@ -27,8 +27,16 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
     public CurrencyCoinflipGame(UUID creator, Currency currency, int wager) {
         super(creator);
+        if (!isValidWager(wager) || wager < Math.max(1, currency.minWager())
+                || (currency.maxWager() > 0 && wager > currency.maxWager())) {
+            throw new IllegalArgumentException("Wager is outside the supported currency limits");
+        }
         this.currency = currency;
         this.wager = wager;
+    }
+
+    public static boolean isValidWager(int wager) {
+        return wager > 0 && wager <= Integer.MAX_VALUE / 2;
     }
 
     @Override
@@ -57,6 +65,7 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
     @Override
     public void cancel(boolean shutdown) {
+        if (!settle()) return;
         refund(this.getCreator(), shutdown);
         if (this.getChallenger() != null) {
             refund(this.getChallenger(), shutdown);
@@ -65,6 +74,7 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
     @Override
     public void finish(UUID winner, UUID loser) {
+        if (!settle()) return;
         // Add statistic to winner and loser
         User winnerUser = UserRepository.getUser(winner);
         winnerUser.getStatistic().resetLoseStreak();
@@ -105,8 +115,8 @@ public class CurrencyCoinflipGame extends CoinflipGame {
         return currency.hasEnoughBalance(player, this.wager);
     }
 
-    public void withdraw(Player player, int amount) {
-        currency.takeBalance(player, amount);
+    public boolean withdraw(Player player, int amount) {
+        return currency.takeBalance(player, amount);
     }
 
     public void deposit(Player player, int amount) {
@@ -160,7 +170,13 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                     // Set the challenger
                     this.setChallenger(clicker.getUniqueId());
                     // Withdraw money from the challenger
-                    withdraw(clicker, this.getWager());
+                    if (!withdraw(clicker, this.getWager())) {
+                        this.setChallenger(null);
+                        starting = false;
+                        clicker.closeInventory();
+                        SoundUtil.villagerNo(clicker);
+                        return;
+                    }
                     // Start the game
                     if (!this.start()) {
                         deposit(clicker, this.getWager());

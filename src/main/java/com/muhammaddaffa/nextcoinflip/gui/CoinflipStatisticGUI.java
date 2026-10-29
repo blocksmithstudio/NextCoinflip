@@ -47,7 +47,7 @@ public class CoinflipStatisticGUI extends FastInv {
         for (Currency currency : CurrencyRepository.getCurrencies()) {
             if (!currency.enabled()) continue;
             // Add the earnings lore
-            int earnings = statistic.getCurrencyEarnings(currency);
+            long earnings = statistic.getCurrencyEarnings(currency);
             // Check positive or negative
             if (earnings >= 0) {
                 lore.addAll(new Placeholder()

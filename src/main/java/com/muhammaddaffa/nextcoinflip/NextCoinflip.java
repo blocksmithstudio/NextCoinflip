@@ -3,7 +3,6 @@ package com.muhammaddaffa.nextcoinflip;
 import com.muhammaddaffa.mdlib.MDLib;
 import com.muhammaddaffa.mdlib.utils.Config;
 import com.muhammaddaffa.mdlib.utils.ConfigBuilder;
-import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
 import com.muhammaddaffa.nextcoinflip.commands.CoinflipCommand;
@@ -43,16 +42,6 @@ public final class NextCoinflip extends JavaPlugin {
         // Register configs
         configs();
 
-        // Register commands & listeners
-        commands();
-        listeners();
-
-        // Register tasks
-        tasks();
-
-        // Load the metrics
-        metrics();
-
         // Connect the database here
         database.connect();
         database.createStatisticTable();
@@ -60,6 +49,11 @@ public final class NextCoinflip extends JavaPlugin {
 
         // Load all data
         CurrencyRepository.load();
+        Bukkit.getOnlinePlayers().forEach(UserRepository::load);
+        commands();
+        listeners();
+        tasks();
+        metrics();
 
         // Register the papi expansion
         new CoinflipExpansion().register();
@@ -73,10 +67,14 @@ public final class NextCoinflip extends JavaPlugin {
     public void onDisable() {
         // On server stop, we should cancel all coinflip
         CoinflipRepository.getGames().forEach(game -> game.cancel(true));
-        OfflineCommandManager.save();
+        if (DATA_CONFIG != null) OfflineCommandManager.save();
         // Save all players data
-        UserRepository.unloadAll();
-        MDLib.shutdown();
+        try {
+            UserRepository.unloadAll();
+        } finally {
+            database.close();
+            MDLib.shutdown();
+        }
     }
 
     private void configs() {

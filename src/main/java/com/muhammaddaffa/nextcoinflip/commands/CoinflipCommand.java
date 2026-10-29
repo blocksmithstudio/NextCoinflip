@@ -1,7 +1,6 @@
 package com.muhammaddaffa.nextcoinflip.commands;
 
 import com.muhammaddaffa.mdlib.commands.args.ArgSuggester;
-import com.muhammaddaffa.mdlib.commands.args.Suggester;
 import com.muhammaddaffa.mdlib.commands.args.builtin.IntArg;
 import com.muhammaddaffa.mdlib.commands.args.builtin.StringArg;
 import com.muhammaddaffa.mdlib.commands.commands.RoutedCommand;
@@ -10,6 +9,7 @@ import com.muhammaddaffa.mdlib.utils.Config;
 import com.muhammaddaffa.mdlib.utils.Placeholder;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.impl.ItemCoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.impl.CurrencyCoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.gui.ConfirmationItemCoinflipChallengerGUI;
@@ -18,6 +18,7 @@ import com.muhammaddaffa.nextcoinflip.gui.CurrencySelectorGUI;
 import com.muhammaddaffa.nextcoinflip.gui.GameSelectorGUI;
 import com.muhammaddaffa.nextcoinflip.utils.HoverableMessage;
 import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
+import com.muhammaddaffa.nextcoinflip.utils.Utils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -88,6 +89,10 @@ public class CoinflipCommand extends RoutedCommand {
                 // Open the coinflip menu gui
                 new GameSelectorGUI(player).open(player);
             } else {
+                if (!CurrencyCoinflipGame.isValidWager(amount)) {
+                    NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.invalid-wager");
+                    return;
+                }
                 // Proceed to create a new coinflip game
                 new CurrencySelectorGUI(amount).open(player);
             }
@@ -113,7 +118,7 @@ public class CoinflipCommand extends RoutedCommand {
             }
             // Otherwise, we should open the confirmation menu
             ItemStack clone = stack.clone();
-            new ConfirmationItemCoinflipCreationGUI(stack)
+            new ConfirmationItemCoinflipCreationGUI(clone)
                     .onCancel(() -> {
                         // Close the inventory
                         player.closeInventory();
@@ -121,10 +126,19 @@ public class CoinflipCommand extends RoutedCommand {
                         SoundUtil.click(player);
                     })
                     .onAccept(() -> {
+                        if (CoinflipRepository.getGames(player).stream().anyMatch(g -> g instanceof ItemCoinflipGame)) {
+                            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.game-existed");
+                            player.closeInventory();
+                            return;
+                        }
+                        ItemStack wager = Utils.takeWagerItem(player, clone);
+                        if (wager == null) {
+                            NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.invalid-item");
+                            player.closeInventory();
+                            return;
+                        }
                         // Register an item coinflip
-                        ItemCoinflipGame game = new ItemCoinflipGame(player.getUniqueId(), stack);
-                        // Remove the item from player's inventory
-                        stack.setAmount(0);
+                        ItemCoinflipGame game = new ItemCoinflipGame(player.getUniqueId(), wager);
                         // Register it on the repository
                         CoinflipRepository.register(game);
 
@@ -187,7 +201,9 @@ public class CoinflipCommand extends RoutedCommand {
         // On cancel, cancel the coinflip
         menu.onCancel(() -> {
             // Remove player as a challenger
-            game.cancelChallenge(other);
+            if (game.getChallenger(target) == challenger && !game.isStarting()) {
+                game.cancelChallenge(other);
+            }
             // Send message
             NextCoinflip.DEFAULT_CONFIG.sendMessage(other, "messages.decline-offer", new Placeholder()
                     .add("{player}", player.getDisplayName()));
@@ -200,19 +216,13 @@ public class CoinflipCommand extends RoutedCommand {
         menu.onAccept(() -> {
             SoundUtil.click(player);
             // Check if the offer is still valid
-            if (game.getChallenger(target) == null) {
+            if (!game.acceptChallenge(target, challenger)) {
                 // Sends message
                 NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.not-valid");
                 // Close the inventory
                 player.closeInventory();
                 return;
             }
-            // On accept, set the opponent, and start coinflip
-            game.setChallenger(challenger.uuid());
-            game.getOffers()[1] = challenger.itemStack();
-            game.start();
-            // Cancel all offer from other player
-            game.cancelAllExcept(challenger);
         });
 
         // Open the menu for the player

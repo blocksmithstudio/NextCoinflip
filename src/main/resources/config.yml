@@ -5,8 +5,8 @@ mysql:
   host: localhost
   port: 3306
   database: db_nextcoinflip
-  user: root
-  password: ''
+  user: "YOUR_DATABASE_USER"
+  password: "YOUR_DATABASE_PASSWORD"
   useSSL: false
 
 # Item wager configuration
@@ -22,6 +22,7 @@ coinflip-head-item:
     - "  &#8cc1cdLosses: &a{losses} &7({lose_streak} streak)"
 
 messages:
+  invalid-wager: "&cWager must be between 1 and 1,073,741,823. Currency limits also apply."
   no-permission: "&7(/cf) &c✘ &#8cc1cdYou don't have permission to do this."
   reload: "&7(/cf) &a✔ &#8cc1cdYou have reloaded the configuration."
   game-existed: "&7(/cf) ◆ &#8cc1cdYou already have an existing game with the same type, cancel it first to create a new one!"

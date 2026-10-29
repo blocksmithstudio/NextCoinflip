@@ -1,7 +1,7 @@
 name: NextCoinflip
 version: '${project.version}'
 main: com.muhammaddaffa.nextcoinflip.NextCoinflip
-api-version: '1.13'
+api-version: '26.3'
 authors: [ aglerr ]
 website: https://muhammaddaffa.com
 

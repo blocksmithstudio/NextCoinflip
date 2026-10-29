@@ -1,19 +1,13 @@
 package com.muhammaddaffa.nextcoinflip.users.repository;
 
-import com.muhammaddaffa.mdlib.utils.Config;
-import com.muhammaddaffa.mdlib.utils.Executor;
 import com.muhammaddaffa.mdlib.utils.Logger;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
-import com.muhammaddaffa.nextcoinflip.currencies.Currency;
-import com.muhammaddaffa.nextcoinflip.currencies.repository.CurrencyRepository;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.models.CoinflipStatistic;
 import com.muhammaddaffa.nextcoinflip.users.models.WonItem;
 import com.muhammaddaffa.nextcoinflip.utils.Serializer;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -36,29 +30,28 @@ public class UserRepository {
     }
 
     @NotNull
-    public static User getUser(UUID uuid) {
-        return userMap.computeIfAbsent(uuid, k -> new User(uuid));
+    public static synchronized User getUser(UUID uuid) {
+        return userMap.computeIfAbsent(uuid, k -> {
+            User user = new User(k);
+            loadStatistics(user);
+            loadItems(user);
+            return user;
+        });
     }
 
     // Used when player leave the server
-    public static void unload(Player player) {
-        getUser(player).save(true);
+    public static synchronized void unload(Player player) {
+        getUser(player).save(false);
         userMap.remove(player.getUniqueId());
     }
 
-    public static void unloadAll() {
-        Bukkit.getOnlinePlayers().forEach(player -> getUser(player).save(false));
+    public static synchronized void unloadAll() {
+        userMap.values().forEach(user -> user.save(false));
+        userMap.clear();
     }
 
     public static void load(Player player) {
-        User user = new User(player.getUniqueId());
-        // Load the data first
-        Executor.async(() -> {
-            loadStatistics(user);
-            loadItems(user);
-        });
-        // Input the data on the map
-        userMap.put(player.getUniqueId(), user);
+        getUser(player);
     }
 
     private static void loadStatistics(User user) {
@@ -85,7 +78,7 @@ public class UserRepository {
             }
         } catch (SQLException ex) {
             Logger.severe("Failed to load " + user.getUniqueId().toString() + " statistics data!");
-            ex.printStackTrace();
+            throw new IllegalStateException("Cannot load player statistics", ex);
         }
     }
 
@@ -110,7 +103,7 @@ public class UserRepository {
             }
         } catch (SQLException ex) {
             Logger.severe("Failed to load " + user.getUniqueId().toString() + " statistics data!");
-            ex.printStackTrace();
+            throw new IllegalStateException("Cannot load player items", ex);
         }
     }
 

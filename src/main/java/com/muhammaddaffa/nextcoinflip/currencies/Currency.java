@@ -35,7 +35,7 @@ public record Currency(
     }
 
     public boolean hasEnoughBalance(Player player, int amount) {
-        return getBalance(player) >= amount;
+        return amount > 0 && getBalance(player) >= amount;
     }
 
     public void giveBalance(Player player, int amount) {
@@ -50,12 +50,12 @@ public record Currency(
         OfflineCommandManager.addCommand(uuid, prepareGiveCommand(amount));
     }
 
-    public void takeBalance(Player player, int amount) {
-        takeBalance(player.getUniqueId(), amount);
+    public boolean takeBalance(Player player, int amount) {
+        return takeBalance(player.getUniqueId(), amount);
     }
 
-    public void takeBalance(UUID uuid, int amount) {
-        OfflineCommandManager.executeCommand(uuid, prepareTakeCommand(amount));
+    public boolean takeBalance(UUID uuid, int amount) {
+        return OfflineCommandManager.executeCommand(uuid, prepareTakeCommand(amount));
     }
 
     private String prepareGiveCommand(int amount) {
@@ -67,6 +67,7 @@ public record Currency(
     }
 
     private String prepareCommand(String template, int amount) {
+        if (amount <= 0) throw new IllegalArgumentException("Currency amount must be positive");
         return template.replace("{amount}", amount + "");
     }
 

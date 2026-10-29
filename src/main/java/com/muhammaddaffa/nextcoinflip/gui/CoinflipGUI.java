@@ -93,6 +93,14 @@ public class CoinflipGUI extends FastInv {
         return task;
     }
 
+    public void stop() {
+        canClose = true;
+        if (task != null) {
+            task.finished = true;
+            task.cancel();
+        }
+    }
+
     public static class CoinflipTask extends BukkitRunnable {
 
         private int step = 0;

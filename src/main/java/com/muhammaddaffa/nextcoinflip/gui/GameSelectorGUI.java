@@ -17,7 +17,6 @@ import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -150,6 +149,10 @@ public class GameSelectorGUI extends FastInv {
             // Add the coinflip game into the menu
             items.add(new Pagination.PaginatedItem(stack, event -> {
                 SoundUtil.click(player);
+                if (!CoinflipRepository.contains(game)) {
+                    this.setAllItems();
+                    return;
+                }
                 // If it's different from creator, start it
                 if (game.getCreator().equals(player.getUniqueId())) {
                     if (game.isStarting()) {

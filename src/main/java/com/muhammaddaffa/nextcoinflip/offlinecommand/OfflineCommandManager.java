@@ -18,16 +18,16 @@ public class OfflineCommandManager implements Listener {
     public static void addCommand(UUID uuid, String command) {
         commandMap.computeIfAbsent(uuid, k -> new ArrayList<>())
                 .add(command);
+        save();
     }
 
-    public static void executeCommand(UUID uuid, String command) {
+    public static boolean executeCommand(UUID uuid, String command) {
         Player player = Bukkit.getPlayer(uuid);
         if (player == null) {
-            commandMap.computeIfAbsent(uuid, k -> new ArrayList<>())
-                    .add(command);
-            return;
+            addCommand(uuid, command);
+            return true;
         }
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command
+        return Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command
                 .replace("{player}", player.getName()));
     }
 
@@ -38,6 +38,7 @@ public class OfflineCommandManager implements Listener {
                 if (commands == null || commands.isEmpty()) {
                     continue;
                 }
+                save();
                 // Execute the command
                 for (String command : commands) {
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command
@@ -63,6 +64,7 @@ public class OfflineCommandManager implements Listener {
     }
 
     public static void load() {
+        commandMap.clear();
         FileConfiguration config = NextCoinflip.DATA_CONFIG.getConfig();
         if (config.isConfigurationSection("commands")) {
             for (String key : config.getConfigurationSection("commands").getKeys(false)) {

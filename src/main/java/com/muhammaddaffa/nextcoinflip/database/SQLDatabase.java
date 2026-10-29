@@ -27,13 +27,13 @@ public class SQLDatabase {
     public void connect() {
         // get all variables we want
         FileConfiguration config = NextCoinflip.DEFAULT_CONFIG.getConfig();
-        String path = "plugins/NextCoinflip/database.db";
+        String path = new File(NextCoinflip.getInstance().getDataFolder(), "database.db").getPath();
         // create the hikari config
         HikariConfig hikari = new HikariConfig();
         hikari.setConnectionTestQuery("SELECT 1");
         hikari.setPoolName("NextCoinflip Database Pool");
         hikari.setMaxLifetime(1000000);
-        hikari.setConnectionTimeout(600000);
+        hikari.setConnectionTimeout(10000);
         hikari.setIdleTimeout(600000);
         hikari.setLeakDetectionThreshold(360000);
         hikari.addDataSourceProperty("characterEncoding", "utf8");
@@ -49,7 +49,7 @@ public class SQLDatabase {
             boolean useSSL = config.getBoolean("mysql.useSSL");
             Logger.info("Trying to connect to the MySQL database...");
 
-            hikari.setDriverClassName("com.mysql.jdbc.Driver");
+            hikari.setDriverClassName("com.mysql.cj.jdbc.Driver");
             hikari.setJdbcUrl(String.format("jdbc:mysql://%s:%d/%s?useSSL=%b",
                     host, port, database, useSSL));
             hikari.setUsername(user);
@@ -65,7 +65,8 @@ public class SQLDatabase {
             hikari.setConnectionTestQuery("SELECT 1");
             hikari.setDriverClassName("org.sqlite.JDBC");
             hikari.setJdbcUrl("jdbc:sqlite:" + path);
-            hikari.setMaximumPoolSize(10);
+            hikari.setMaximumPoolSize(1);
+            hikari.addDataSourceProperty("busy_timeout", "5000");
 
             Logger.info("Trying to connect to the SQLite database...");
             // create the file if it's not exist
@@ -214,7 +215,7 @@ public class SQLDatabase {
     }
 
     public void close() {
-        this.dataSource.close();
+        if (this.dataSource != null) this.dataSource.close();
     }
 
 }

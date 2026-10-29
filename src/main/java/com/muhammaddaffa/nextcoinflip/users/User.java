@@ -1,6 +1,5 @@
 package com.muhammaddaffa.nextcoinflip.users;
 
-import com.muhammaddaffa.mdlib.utils.Executor;
 import com.muhammaddaffa.mdlib.utils.Logger;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
@@ -49,38 +48,36 @@ public class User {
         wonItems.add(new WonItem(stack));
     }
 
-    public void removeWonItem(WonItem item) {
-        removeWonItem(item.getUniqueId());
+    public boolean removeWonItem(WonItem item) {
+        return removeWonItem(item.getUniqueId());
     }
 
-    public void removeWonItem(UUID itemId) {
-        wonItems.removeIf(item -> item.getUniqueId().equals(itemId));
-        // Remove it from the database too
-        Executor.async(() -> {
-            SQLDatabase database = NextCoinflip.getInstance().getDatabase();
-            // Get the query
-            // (user_uuid, item_uuid, item, timestamp)
-            String query = "DELETE FROM " + SQLDatabase.ITEM_TABLE + " WHERE item_uuid = ?";
-            try (Connection connection = database.getConnection();
-                    PreparedStatement statement = connection.prepareStatement(query)) {
-                // Set the statements
-                statement.setString(1, itemId.toString());
-                // Execute the update
-                statement.executeUpdate();
+    public synchronized boolean removeWonItem(UUID itemId) {
+        if (wonItems.stream().noneMatch(item -> item.getUniqueId().equals(itemId))) return false;
+        SQLDatabase database = NextCoinflip.getInstance().getDatabase();
+        // Get the query
+        // (user_uuid, item_uuid, item, timestamp)
+        String query = "DELETE FROM " + SQLDatabase.ITEM_TABLE + " WHERE item_uuid = ? AND user_uuid = ?";
+        try (Connection connection = database.getConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
+            // Set the statements
+            statement.setString(1, itemId.toString());
+            statement.setString(2, uuid.toString());
+            // Execute the update
+            if (statement.executeUpdate() != 1) return false;
+            wonItems.removeIf(item -> item.getUniqueId().equals(itemId));
+            return true;
 
-            } catch(SQLException ex) {
-                Logger.severe("Failed to remove won item " + itemId.toString() + " for user " + this.uuid.toString());
-                ex.printStackTrace();
-            }
-        });
-    }
-
-    public void save(boolean async) {
-        if (async) {
-            Executor.async(this::save);
-        } else {
-            this.save();
+        } catch(SQLException ex) {
+            Logger.severe("Failed to remove won item " + itemId.toString() + " for user " + this.uuid.toString());
+            return false;
         }
+    }
+
+    public synchronized void save(boolean async) {
+        // ponytail: synchronous writes prevent stale saves resurrecting claimed items;
+        // use an ordered persistence queue with immutable snapshots if DB latency becomes significant.
+        this.save();
     }
 
     private void save() {
@@ -105,7 +102,7 @@ public class User {
 
         } catch(SQLException ex) {
             Logger.severe("Failed to save " + this.uuid.toString() + " statistics data!");
-            ex.printStackTrace();
+            throw new IllegalStateException("Cannot save player statistics", ex);
         }
     }
 
@@ -129,7 +126,7 @@ public class User {
 
         } catch(SQLException ex) {
             Logger.severe("Failed to save " + this.uuid.toString() + " items data!");
-            ex.printStackTrace();
+            throw new IllegalStateException("Cannot save player items", ex);
         }
     }
 
