@@ -8,7 +8,7 @@ Reviewed on 2026-10-29 against Paper 26.3 build 230 and Java 25.
 | --- | --- | --- |
 | Java | 21 | 25 |
 | Paper API | 1.21.9-R0.1-SNAPSHOT | 26.3.build.230-stable |
-| MDLib | com.github.mdaffa48:MDLib:2.3.7 | com.muhammaddaffa:MDLib:2.4.7 |
+| MDLib | com.github.mdaffa48:MDLib:2.3.7 | com.muhammaddaffa:MDLib:2.4.8 |
 | PlaceholderAPI | 2.11.6 | 2.12.3 |
 | HikariCP | 7.0.2 | 7.1.0 |
 | bStats | 3.0.2 | 3.2.1 |
@@ -18,6 +18,8 @@ Reviewed on 2026-10-29 against Paper 26.3 build 230 and Java 25.
 The server API version is declared as 26.3. Dependencies use fixed stable versions instead of an open version range that could select a prerelease or incompatible Minecraft update.
 
 ## Corrected issues
+
+- Update MDLib to 2.4.8: Paper 26.3 command-map cleanup no longer relies on unsupported collection removal, and update-checker shutdown no longer dereferences a cleared singleton.
 
 - Reject negative, zero, and overflowing currency wagers at the game boundary and command entry point. Negative inputs previously passed through an absolute-value check while the original signed amount reached the withdrawal command.
 - Use 64-bit cumulative currency earnings so ordinary repeated wagers do not overflow statistics.
@@ -35,7 +37,9 @@ The server API version is declared as 26.3. Dependencies use fixed stable versio
 
 Regression tests in `src/test/java/com/muhammaddaffa/nextcoinflip/SafetyTest.java` cover wager validation, payout bounds, repeated settlement, self-challenges, stale/offline item confirmations, inventory changes, persistent claims, database failure, loading existing users, and cumulative earnings.
 
-Build with `mvn clean verify`. A real server smoke test should additionally check plugin enablement, SQLite initialization, PlaceholderAPI registration, command reload, and clean shutdown on the declared Paper version.
+`mvn clean verify` passed all **15 NextCoinflip tests**. The MDLib 2.4.8 fix has **108 passing library tests**.
+
+A real Paper **26.3 build 230 / Java 25** server test passed with PlaceholderAPI 2.12.3: plugin enablement, SQLite initialization, expansion registration, `/cf reload`, null-player placeholder handling, and clean shutdown. A server-side probe saved and reloaded an item with custom persistent metadata, claimed it once, rejected a second claim, and confirmed that another save/reload did not restore it. The test server used a loopback listener and synthetic player data.
 
 ## Remaining limitations
 

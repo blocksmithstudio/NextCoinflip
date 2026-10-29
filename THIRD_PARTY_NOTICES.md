@@ -4,7 +4,7 @@ NextCoinflip's original source is GPL-3.0-or-later, copyright (c) 2026 Muhammad 
 
 ## Bundled libraries
 
-- **MDLib 2.4.7**, Muhammad Daffa and upstream contributors. [Public source](https://github.com/mdaffa48/MDLib/tree/78c018626ce0b02e5ee2846983b8640cccd95c76), [Maven artifact](https://repo.blocksmith.studio/releases/com/muhammaddaffa/MDLib/2.4.7/). The library includes GPL-3.0-or-later SpigotUpdateChecker code, copyright (c) 2022 Alexander Majka (mfnalex), JEFF Media GbR. [Upstream source](https://github.com/JEFF-Media-GbR/SpigotUpdateChecker). The GNU GPLv3 text is in `LICENSE`.
+- **MDLib 2.4.8**, Muhammad Daffa and upstream contributors. [Public source](https://github.com/mdaffa48/MDLib/tree/440fedb39f45f5dd86822c46e9950283f2f35d8c), [Maven artifact](https://repo.blocksmith.studio/releases/com/muhammaddaffa/MDLib/2.4.8/). The library includes GPL-3.0-or-later SpigotUpdateChecker code, copyright (c) 2022 Alexander Majka (mfnalex), JEFF Media GbR. [Upstream source](https://github.com/JEFF-Media-GbR/SpigotUpdateChecker). The GNU GPLv3 text is in `LICENSE`.
 - **FastInv**, bundled inside MDLib, copyright (c) 2018–2021 MrMicky, MIT License. [Source](https://github.com/MrMicky-FR/FastInv). Its full notice is preserved in `src/main/resources/META-INF/licenses/FastInv.txt` and the built JAR.
 - **XSeries 13.7.1**, Crypto Morin, MIT License. [Source](https://github.com/CryptoMorin/XSeries).
 - **FastBoard 2.1.5**, MrMicky, MIT License. [Source](https://github.com/MrMicky-FR/FastBoard).
