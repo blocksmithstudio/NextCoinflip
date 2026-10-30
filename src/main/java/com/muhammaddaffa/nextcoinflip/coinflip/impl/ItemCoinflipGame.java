@@ -3,14 +3,14 @@ package com.muhammaddaffa.nextcoinflip.coinflip.impl;
 import com.muhammaddaffa.mdlib.utils.Common;
 import com.muhammaddaffa.mdlib.utils.ItemBuilder;
 import com.muhammaddaffa.mdlib.utils.WordUtils;
+import com.muhammaddaffa.mdlib.utils.Logger;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.gui.ConfirmationItemCoinflipChallengerGUI;
-import com.muhammaddaffa.nextcoinflip.users.User;
-import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import com.muhammaddaffa.nextcoinflip.utils.HoverableMessage;
 import com.muhammaddaffa.nextcoinflip.utils.Utils;
+import com.muhammaddaffa.nextcoinflip.utils.Serializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -19,7 +19,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ItemCoinflipGame extends CoinflipGame {
@@ -27,6 +34,7 @@ public class ItemCoinflipGame extends CoinflipGame {
     private final ItemStack[] offers = new ItemStack[2];
 
     private final Map<String, ChallengerDetails> challengerMap = new ConcurrentHashMap<>();
+    private final Map<UUID, Settlement> refunds = new HashMap<>();
 
     public ItemCoinflipGame(UUID creator, ItemStack stack) {
         super(creator);
@@ -48,7 +56,6 @@ public class ItemCoinflipGame extends CoinflipGame {
     @Override
     public ItemStack getItem() {
         FileConfiguration config = NextCoinflip.GAME_SELECTOR_MENU_CONFIG.getConfig();
-        // Get the display name of the item
         ItemStack stack = offers[0];
         ItemMeta meta = stack.getItemMeta();
         String itemDisplayName = (meta.getDisplayName() == null || meta.getDisplayName().isEmpty()) ?
@@ -56,11 +63,8 @@ public class ItemCoinflipGame extends CoinflipGame {
                 meta.getDisplayName();
 
         List<String> lore = new ArrayList<>();
-        // Step 1: Add header lore
         lore.addAll(config.getStringList("wager-items.item.header-lore"));
-        // Step 2: Add lore from the item
         if (meta.getLore() != null) lore.addAll(meta.getLore());
-        // Step 3: Add footer lore
         lore.addAll(config.getStringList("wager-items.item.footer-lore"));
 
         return new ItemBuilder(stack.clone())
@@ -74,46 +78,47 @@ public class ItemCoinflipGame extends CoinflipGame {
 
     @Override
     public void cancel(boolean shutdown) {
-        if (!settle()) return;
-        // Add won item object for player
-        this.refundItem(this.getCreator(), offers[0], !shutdown);
-        if (getChallenger() != null) {
-            this.refundItem(getChallenger(), offers[1], !shutdown);
-        }
-        // Get all challenger
-        for (ChallengerDetails detail : new ArrayList<>(this.challengerMap.values())) {
-            Player player = Bukkit.getPlayer(detail.uuid());
-            // Cancel the challenge
-            this.cancelChallenge(detail.uuid(), !shutdown);
-            // Sends message
-            if (player != null) {
-                NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.offer-cancelled");
+        this.settle(null, () -> {
+            List<Settlement> deliveries = new ArrayList<>();
+            deliveries.add(this.updateUser(this.getCreator(), user -> user.addWonItem(this.offers[0])));
+            if (this.getChallenger() != null && this.offers[1] != null) {
+                deliveries.add(this.updateUser(this.getChallenger(), user -> user.addWonItem(this.offers[1])));
             }
-        }
+            for (ChallengerDetails detail : new ArrayList<>(this.challengerMap.values())) {
+                deliveries.add(new Settlement(detail.uuid(), "offer-refund", () -> {
+                    this.cancelChallenge(detail.uuid());
+                    Player player = Bukkit.getPlayer(detail.uuid());
+                    if (player != null) {
+                        NextCoinflip.DEFAULT_CONFIG.sendMessage(player, "messages.offer-cancelled");
+                    }
+                }));
+            }
+            return deliveries;
+        });
     }
 
     @Override
     public void finish(UUID winner, UUID loser) {
-        if (!settle()) return;
-        // Add statistic to winner and loser
-        User winnerUser = UserRepository.getUser(winner);
-        winnerUser.getStatistic().resetLoseStreak();
-        winnerUser.getStatistic().addWins();
-
-        User loserUser = UserRepository.getUser(loser);
-        loserUser.getStatistic().addLosses();
-        loserUser.getStatistic().addLoseStreak();
-
-        // Give player both items from the offers
-        for (ItemStack stack : offers) {
-            if (stack != null) {
-                UserRepository.getUser(winner).addWonItem(stack);
+        this.settle(winner, () -> {
+            List<Settlement> deliveries = new ArrayList<>();
+            deliveries.add(this.updateUser(winner, user -> {
+                user.getStatistic().resetLoseStreak();
+                user.getStatistic().addWins();
+                for (ItemStack stack : this.offers) {
+                    if (stack != null) {
+                        user.addWonItem(stack);
+                    }
+                }
+            }));
+            deliveries.add(this.updateUser(loser, user -> {
+                user.getStatistic().addLosses();
+                user.getStatistic().addLoseStreak();
+            }));
+            for (ChallengerDetails detail : new ArrayList<>(this.challengerMap.values())) {
+                deliveries.add(new Settlement(detail.uuid(), "offer-refund", () -> this.cancelChallenge(detail.uuid())));
             }
-        }
-
-        // Save the user here
-        winnerUser.save(true);
-        loserUser.save(true);
+            return deliveries;
+        });
     }
 
     @Override
@@ -123,7 +128,6 @@ public class ItemCoinflipGame extends CoinflipGame {
             NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.not-valid");
             return;
         }
-        // Check if player already has an offer
         if (getChallenger(clicker.getName()) != null) {
             NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.already-offered");
             return;
@@ -135,29 +139,23 @@ public class ItemCoinflipGame extends CoinflipGame {
         }
         stack = stack.clone();
         final ItemStack expected = stack;
-        // Open the menu for the clicker
         ConfirmationItemCoinflipChallengerGUI menu = new ConfirmationItemCoinflipChallengerGUI(clicker, stack, creator, getOffers()[0]);
         menu.onCancel(() -> {
             clicker.closeInventory();
-            // Play sounds
             Common.playSound(clicker, Sound.UI_BUTTON_CLICK);
             Common.playSound(clicker, Sound.ENTITY_VILLAGER_NO);
         });
         menu.onAccept(() -> {
-            // Add challenger
             if (!this.addChallenger(clicker, expected)) {
                 NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.not-valid");
                 Common.playSound(clicker, Sound.ENTITY_VILLAGER_NO);
                 clicker.closeInventory();
                 return;
             }
-            // Close inventory for the player
             clicker.closeInventory();
-            // Play sounds
             Common.playSound(clicker, Sound.UI_BUTTON_CLICK);
             Common.playSound(clicker, Sound.BLOCK_NOTE_BLOCK_PLING);
         });
-        // Open the menu for player
         menu.open(clicker);
     }
 
@@ -173,6 +171,46 @@ public class ItemCoinflipGame extends CoinflipGame {
         return challengerMap;
     }
 
+    @Override
+    public Map<String, Object> recoveryData() {
+        Map<String, Object> data = super.recoveryData();
+        data.put("creator-item", Serializer.serialize(this.offers[0]));
+        data.put("challenger-item", this.offers[1] == null ? null : Serializer.serialize(this.offers[1]));
+        List<Map<String, Object>> pending = new ArrayList<>();
+        for (ChallengerDetails offer : this.challengerMap.values()) {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("player", offer.uuid().toString());
+            entry.put("item", Serializer.serialize(offer.itemStack()));
+            Settlement refund = this.refunds.get(offer.uuid());
+            entry.put("remaining-steps", refund == null ? 3 : refund.remainingSteps());
+            pending.add(entry);
+        }
+        data.put("pending-offers", pending);
+        return data;
+    }
+
+    @Override
+    public boolean involves(UUID uuid) {
+        return super.involves(uuid) || this.challengerMap.values().stream().anyMatch(offer -> offer.uuid().equals(uuid));
+    }
+
+    public void retryRefunds() {
+        RuntimeException failure = null;
+        for (UUID uuid : new ArrayList<>(this.refunds.keySet())) {
+            try {
+                this.cancelChallenge(uuid);
+            } catch (RuntimeException ex) {
+                if (failure == null) {
+                    failure = new IllegalStateException("Item refunds remain incomplete");
+                }
+                failure.addSuppressed(ex);
+            }
+        }
+        if (failure != null) {
+            throw failure;
+        }
+    }
+
     public void cancelChallenge(Player player) {
         if (player == null) {
             return;
@@ -181,10 +219,6 @@ public class ItemCoinflipGame extends CoinflipGame {
     }
 
     public void cancelChallenge(UUID uuid) {
-        this.cancelChallenge(uuid, true);
-    }
-
-    private void cancelChallenge(UUID uuid, boolean asyncSave) {
         String key = this.challengerMap.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().uuid().equals(uuid))
@@ -194,9 +228,13 @@ public class ItemCoinflipGame extends CoinflipGame {
         if (key == null) {
             return;
         }
-        ChallengerDetails details = this.challengerMap.remove(key);
+        ChallengerDetails details = this.challengerMap.get(key);
         if (details != null) {
-            this.refundItem(details.uuid(), details.itemStack(), asyncSave);
+            Settlement refund = this.refunds.computeIfAbsent(uuid,
+                    ignored -> this.updateUser(uuid, user -> user.addWonItem(details.itemStack())));
+            refund.run();
+            this.challengerMap.remove(key, details);
+            this.refunds.remove(uuid);
         }
     }
 
@@ -204,9 +242,11 @@ public class ItemCoinflipGame extends CoinflipGame {
         new ArrayList<>(this.challengerMap.values()).forEach(detail -> {
             if (!detail.uuid().equals(challenger.uuid())) {
                 Player other = Bukkit.getPlayer(detail.uuid());
-                // Cancel the challenge
-                this.cancelChallenge(detail.uuid());
-                // Sends message
+                try {
+                    this.cancelChallenge(detail.uuid());
+                } catch (RuntimeException ex) {
+                    Logger.severe("An item offer refund remains pending for game " + this.getUniqueId());
+                }
                 if (other != null) {
                     NextCoinflip.DEFAULT_CONFIG.sendMessage(other, "messages.offer-cancelled");
                 }
@@ -223,28 +263,23 @@ public class ItemCoinflipGame extends CoinflipGame {
         if (creator == null) {
             return false;
         }
-        // First, make the item stack clone first
         ItemStack clone = Utils.takeWagerItem(challenger, stack);
         if (clone == null) return false;
 
-        // Add the challenger to the map
         this.challengerMap.put(challenger.getName().toLowerCase(Locale.ROOT), new ChallengerDetails(challenger.getUniqueId(), challenger.getDisplayName(), clone, System.currentTimeMillis()));
 
-        // Send item offer message
         NextCoinflip.DEFAULT_CONFIG.sendMessage(challenger, "messages.item-offer");
 
-        // Send notification to the creator
         HoverableMessage.sendHoverableItemMessage(creator, clone, NextCoinflip.DEFAULT_CONFIG.getString("messages.item-challenge")
                 .replace("{challenger_display_name}", challenger.getDisplayName())
                 .replace("{challenger_name}", challenger.getName()));
-        // Send clickable message
         HoverableMessage.sendClickableTextMessage(creator, NextCoinflip.DEFAULT_CONFIG.getString("messages.item-challenge-accept")
                 .replace("{player_name}", challenger.getName()), "/cf accept " + challenger.getName());
         return true;
     }
 
     public boolean acceptChallenge(String name, ChallengerDetails expected) {
-        if (getChallenger(name) != expected || !canStart(expected.uuid())) {
+        if (getChallenger(name) != expected || this.refunds.containsKey(expected.uuid()) || !canStart(expected.uuid())) {
             return false;
         }
         setChallenger(expected.uuid());
@@ -257,15 +292,6 @@ public class ItemCoinflipGame extends CoinflipGame {
         challengerMap.remove(name.toLowerCase(Locale.ROOT));
         cancelAllExcept(expected);
         return true;
-    }
-
-    private void refundItem(UUID uuid, ItemStack stack, boolean asyncSave) {
-        if (stack == null || stack.getType() == Material.AIR || stack.getAmount() <= 0) {
-            return;
-        }
-        User user = UserRepository.getUser(uuid);
-        user.addWonItem(stack);
-        user.save(asyncSave);
     }
 
     public record ChallengerDetails(

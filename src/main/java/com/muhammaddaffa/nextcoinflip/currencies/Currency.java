@@ -3,6 +3,7 @@ package com.muhammaddaffa.nextcoinflip.currencies;
 import com.muhammaddaffa.nextcoinflip.offlinecommand.OfflineCommandManager;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
 
 import java.util.UUID;
 
@@ -19,19 +20,16 @@ public record Currency(
 
     public int getBalance(Player player) {
         String parsed = PlaceholderAPI.setPlaceholders(player, this.balancePlaceholder()).trim();
-        // Allow commas and decimals, but ensure the string only contains digits, commas, dots, or a leading minus
         if (parsed.matches("-?[\\d,.]+")) {
             try {
-                // Remove commas (thousand separators)
                 String cleaned = parsed.replace(",", "");
-                // Parse as double to handle decimals like 123.45
                 double value = Double.parseDouble(cleaned);
-                return (int) Math.floor(value); // or use Math.round(value) if you prefer rounding
+                return (int) Math.floor(value);
             } catch (NumberFormatException e) {
                 return 0;
             }
         }
-        return 0; // invalid format or contains non-numeric characters
+        return 0;
     }
 
     public boolean hasEnoughBalance(Player player, int amount) {
@@ -43,7 +41,11 @@ public record Currency(
     }
 
     public void giveBalance(UUID uuid, int amount) {
-        OfflineCommandManager.executeCommand(uuid, prepareGiveCommand(amount));
+        OfflineCommandManager.addCommand(uuid, this.prepareGiveCommand(amount));
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null) {
+            OfflineCommandManager.deliver(player);
+        }
     }
 
     public void queueGiveBalance(UUID uuid, int amount) {

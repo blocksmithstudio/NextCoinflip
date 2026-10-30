@@ -3,6 +3,11 @@ package com.muhammaddaffa.nextcoinflip;
 import com.muhammaddaffa.mdlib.MDLib;
 import com.muhammaddaffa.mdlib.utils.Config;
 import com.muhammaddaffa.mdlib.utils.ConfigBuilder;
+import com.muhammaddaffa.mdlib.utils.Executor;
+import com.muhammaddaffa.mdlib.utils.Logger;
+import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.impl.ItemCoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.settlement.SettlementRecovery;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
 import com.muhammaddaffa.nextcoinflip.commands.CoinflipCommand;
@@ -17,6 +22,8 @@ import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.ArrayList;
 
 public final class NextCoinflip extends JavaPlugin {
 
@@ -39,15 +46,14 @@ public final class NextCoinflip extends JavaPlugin {
         MDLib.onEnable(this);
         instance = this;
 
-        // Register configs
+        SettlementRecovery.requireResolved(this.getDataFolder().toPath());
+
         configs();
 
-        // Connect the database here
         database.connect();
         database.createStatisticTable();
         database.createItemTable();
 
-        // Load all data
         CurrencyRepository.load();
         Bukkit.getOnlinePlayers().forEach(UserRepository::load);
         commands();
@@ -55,48 +61,50 @@ public final class NextCoinflip extends JavaPlugin {
         tasks();
         metrics();
 
-        // Register the papi expansion
         new CoinflipExpansion().register();
 
-        // Offline command mechanics
         OfflineCommandManager.load();
         OfflineCommandManager.startTask();
     }
 
     @Override
     public void onDisable() {
-        // On server stop, we should cancel all coinflip
-        CoinflipRepository.getGames().forEach(game -> game.cancel(true));
-        if (DATA_CONFIG != null) OfflineCommandManager.save();
-        // Save all players data
         try {
-            UserRepository.unloadAll();
+            for (CoinflipGame game : new ArrayList<>(CoinflipRepository.getGames())) {
+                this.shutdownStep("game settlement", () -> game.cancel(true));
+            }
+            if (DATA_CONFIG != null) {
+                this.shutdownStep("pending currency deliveries", OfflineCommandManager::save);
+            }
+            this.shutdownStep("player data", UserRepository::unloadAll);
+            this.shutdownStep("recovery snapshot", SettlementRecovery::save);
         } finally {
-            database.close();
-            MDLib.shutdown();
+            try {
+                this.shutdownStep("database pool", this.database::close);
+            } finally {
+                this.shutdownStep("library cleanup", MDLib::shutdown);
+            }
+        }
+    }
+
+    private void shutdownStep(String operation, Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException ex) {
+            Logger.severe("NextCoinflip could not complete " + operation + "; recovery is required.");
         }
     }
 
     private void configs() {
-        // config.yml
         DEFAULT_CONFIG = new ConfigBuilder("config.yml").setShouldAutoUpdate(true).build();
-        // currencies.yml
         CURRENCY_CONFIG = new ConfigBuilder("currencies.yml").build();
-        // gui/game_selector.yml
         GAME_SELECTOR_MENU_CONFIG = new ConfigBuilder("game_selector.yml").setDirectory("gui").build();
-        // gui/currency_selector.yml
         CURRENCY_SELECTOR_MENU_CONFIG = new ConfigBuilder("currency_selector.yml").setDirectory("gui").build();
-        // gui/confirm_currency_wager.yml
         CONFIRM_CURRENCY_WAGER_MENU_CONFIG = new ConfigBuilder("confirm_currency_wager.yml").setDirectory("gui").build();
-        // gui/confirm_item_wager_creation.yml
         CONFIRM_ITEM_WAGER_CREATION_CONFIG = new ConfigBuilder("confirm_item_wager_creation.yml").setDirectory("gui").build();
-        // gui/won_items.yml
         WON_ITEM_CONFIG = new ConfigBuilder("won_items.yml").setDirectory("gui").build();
-        // gui/statistic.yml
         STATISTIC_CONFIG = new ConfigBuilder("statistic.yml").setDirectory("gui").build();
-        // gui/confirm_item_wager_challenger.yml
         CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG = ConfigBuilder.create("confirm_item_wager_challenger.yml").setDirectory("gui").build();
-        // data.yml
         DATA_CONFIG = ConfigBuilder.create("data.yml").setShouldReload(false).build();
 
         Config.updateConfigs();
@@ -105,7 +113,6 @@ public final class NextCoinflip extends JavaPlugin {
 
     private void listeners() {
         PluginManager pm = Bukkit.getPluginManager();
-        // Register events
         pm.registerEvents(new UserQuitListener(), this);
         pm.registerEvents(new UserListener(), this);
     }
@@ -115,13 +122,25 @@ public final class NextCoinflip extends JavaPlugin {
     }
 
     private void tasks() {
-        // Offer expiry task
         new OfferExpiryTask().runTaskTimer(this, 0L, (10 * 200));
+        Executor.syncTimer(20L, 20L, () -> {
+            for (CoinflipGame game : new ArrayList<>(CoinflipRepository.getGames())) {
+                try {
+                    if (game.hasPendingSettlement()) {
+                        game.retrySettlement();
+                    }
+                    if (game instanceof ItemCoinflipGame itemGame) {
+                        itemGame.retryRefunds();
+                    }
+                } catch (RuntimeException ex) {
+                    Logger.severe("Game " + game.getUniqueId() + " has pending settlement work; retrying.");
+                }
+            }
+        });
     }
 
     private void metrics() {
         Metrics metrics = new Metrics(this, PLUGIN_ID);
-        // Maybe add custom chart in the future
     }
 
     public SQLDatabase getDatabase() {

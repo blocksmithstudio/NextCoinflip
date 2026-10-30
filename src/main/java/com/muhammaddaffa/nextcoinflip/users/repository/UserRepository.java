@@ -3,6 +3,7 @@ package com.muhammaddaffa.nextcoinflip.users.repository;
 import com.muhammaddaffa.mdlib.utils.Logger;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.database.SQLDatabase;
+import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.users.User;
 import com.muhammaddaffa.nextcoinflip.users.models.CoinflipStatistic;
 import com.muhammaddaffa.nextcoinflip.users.models.WonItem;
@@ -19,6 +20,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class UserRepository {
 
@@ -39,36 +43,73 @@ public class UserRepository {
         });
     }
 
-    // Used when player leave the server
     public static synchronized void unload(Player player) {
         getUser(player).save(false);
-        userMap.remove(player.getUniqueId());
+        if (CoinflipRepository.getGames().stream().noneMatch(game -> game.involves(player.getUniqueId()))) {
+            userMap.remove(player.getUniqueId());
+        }
     }
 
     public static synchronized void unloadAll() {
-        userMap.values().forEach(user -> user.save(false));
-        userMap.clear();
+        RuntimeException failure = null;
+        var iterator = userMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            try {
+                entry.getValue().save(false);
+                if (CoinflipRepository.getGames().stream().noneMatch(game -> game.involves(entry.getKey()))) {
+                    iterator.remove();
+                }
+            } catch (RuntimeException ex) {
+                if (failure == null) {
+                    failure = new IllegalStateException("Some player saves remain incomplete");
+                }
+                failure.addSuppressed(ex);
+            }
+        }
+        if (failure != null) {
+            throw failure;
+        }
     }
 
     public static void load(Player player) {
         getUser(player);
     }
 
+    public static synchronized List<Map<String, Object>> recoveryData() {
+        List<Map<String, Object>> users = new ArrayList<>();
+        for (User user : userMap.values()) {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("player", user.getUniqueId().toString());
+            data.put("wins", user.getStatistic().getWins());
+            data.put("losses", user.getStatistic().getLosses());
+            data.put("lose-streak", user.getStatistic().getLoseStreak());
+            data.put("earnings", user.getStatistic().serializeEarnings());
+            List<Map<String, Object>> items = new ArrayList<>();
+            for (WonItem item : user.getWonItems()) {
+                Map<String, Object> entry = new LinkedHashMap<>();
+                entry.put("id", item.getUniqueId().toString());
+                entry.put("item", Serializer.serialize(item.getItemStack()));
+                entry.put("timestamp", item.getTimestamp());
+                items.add(entry);
+            }
+            data.put("items", items);
+            users.add(data);
+        }
+        return users;
+    }
+
     private static void loadStatistics(User user) {
         SQLDatabase database = NextCoinflip.getInstance().getDatabase();
-        // Get the query
         String query = "SELECT * FROM " + SQLDatabase.STATISTIC_TABLE + " WHERE uuid = ?";
         try (Connection connection = database.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            // (uuid, wins, losses, lose_streak, earnings)
             statement.setString(1, user.getUniqueId().toString());
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    // Load the statistics data
                     int wins = rs.getInt("wins");
                     int losses = rs.getInt("losses");
                     int loseStreak = rs.getInt("lose_streak");
-                    // Set the statistics
                     CoinflipStatistic statistic = user.getStatistic();
                     statistic.setWins(wins);
                     statistic.setLosses(losses);
@@ -84,11 +125,9 @@ public class UserRepository {
 
     private static void loadItems(User user) {
         SQLDatabase database = NextCoinflip.getInstance().getDatabase();
-        // Get the query
         String query = "SELECT * FROM " + SQLDatabase.ITEM_TABLE + " WHERE user_uuid = ?";
         try (Connection connection = database.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            // (user_uuid, item_uuid, item, timestamp)
             statement.setString(1, user.getUniqueId().toString());
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
@@ -96,7 +135,6 @@ public class UserRepository {
                     ItemStack item = Serializer.deserialize(rs.getString("item"));
                     long timestamp = rs.getLong("timestamp");
                     if (item != null) {
-                        // Insert the item to user won item
                         user.addWonItem(new WonItem(uuid, item, timestamp));
                     }
                 }

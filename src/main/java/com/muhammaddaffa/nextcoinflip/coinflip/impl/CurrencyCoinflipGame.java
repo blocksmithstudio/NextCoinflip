@@ -8,8 +8,6 @@ import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.currencies.Currency;
 import com.muhammaddaffa.nextcoinflip.gui.ConfirmationCurrencyGUI;
-import com.muhammaddaffa.nextcoinflip.users.User;
-import com.muhammaddaffa.nextcoinflip.users.repository.UserRepository;
 import com.muhammaddaffa.nextcoinflip.utils.SkullCreator;
 import com.muhammaddaffa.nextcoinflip.utils.SoundUtil;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -17,6 +15,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class CurrencyCoinflipGame extends CoinflipGame {
 
@@ -46,57 +47,58 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
     @Override
     public ItemStack getItem() {
-        // Create the placeholders
         Placeholder placeholder = this.getDefaultPlaceholders()
                 .add("{wager_digits}", Common.digits(getWager()))
                 .add("{wager_format}", Common.format(getWager()))
                 .add("{currency}", currency.identifier());
 
-        // Get the config and create the item
         FileConfiguration config = NextCoinflip.GAME_SELECTOR_MENU_CONFIG.getConfig();
         ItemBuilder builder = SkullCreator.createItem(this.getCreator())
                 .name(config.getString("wager-items.currency.display-name"))
                 .lore(config.getStringList("wager-items.currency.lore"))
                 .placeholder(placeholder);
 
-        // Return the item
         return builder.build();
     }
 
     @Override
     public void cancel(boolean shutdown) {
-        if (!settle()) return;
-        refund(this.getCreator(), shutdown);
-        if (this.getChallenger() != null) {
-            refund(this.getChallenger(), shutdown);
-        }
+        this.settle(null, () -> {
+            List<Settlement> deliveries = new ArrayList<>();
+            deliveries.add(new Settlement(this.getCreator(), "currency", () -> this.refund(this.getCreator(), shutdown)));
+            if (this.getChallenger() != null) {
+                deliveries.add(new Settlement(this.getChallenger(), "currency", () -> this.refund(this.getChallenger(), shutdown)));
+            }
+            return deliveries;
+        });
     }
 
     @Override
     public void finish(UUID winner, UUID loser) {
-        if (!settle()) return;
-        // Add statistic to winner and loser
-        User winnerUser = UserRepository.getUser(winner);
-        winnerUser.getStatistic().resetLoseStreak();
-        winnerUser.getStatistic().addWins();
-        winnerUser.getStatistic().addCurrencyEarnings(currency, this.getWager());
-
-        User loserUser = UserRepository.getUser(loser);
-        loserUser.getStatistic().addLosses();
-        loserUser.getStatistic().addLoseStreak();
-        loserUser.getStatistic().addCurrencyEarnings(currency, -this.getWager());
-
-        // Double the amount of deposit on winning
-        // Only deposit no withdraw because withdraw already happened before the game finish
-        deposit(winner, this.getWager() * 2);
-
-        // Save the user here
-        winnerUser.save(true);
-        loserUser.save(true);
+        this.settle(winner, () -> List.of(
+                new Settlement(winner, "currency", () -> this.deposit(winner, this.getWager() * 2)),
+                this.updateUser(winner, user -> {
+                    user.getStatistic().resetLoseStreak();
+                    user.getStatistic().addWins();
+                    user.getStatistic().addCurrencyEarnings(this.currency, this.wager);
+                }),
+                this.updateUser(loser, user -> {
+                    user.getStatistic().addLosses();
+                    user.getStatistic().addLoseStreak();
+                    user.getStatistic().addCurrencyEarnings(this.currency, -this.wager);
+                })));
     }
 
     public int getWager() {
         return wager;
+    }
+
+    @Override
+    public Map<String, Object> recoveryData() {
+        Map<String, Object> data = super.recoveryData();
+        data.put("wager", this.wager);
+        data.put("give-command", this.currency.giveCommand());
+        return data;
     }
 
     public Currency getCurrency() {
@@ -137,12 +139,9 @@ public class CurrencyCoinflipGame extends CoinflipGame {
 
     @Override
     public void onClick(Player clicker) {
-        // Open the confirmation menu gui
         new ConfirmationCurrencyGUI(this)
                 .onCancel(() -> {
-                    // Close the inventory
                     clicker.closeInventory();
-                    // Click sound
                     SoundUtil.click(clicker);
                 })
                 .onAccept(() -> {
@@ -154,22 +153,16 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                     }
 
                     SoundUtil.click(clicker);
-                    // Check if the guy has enough money
                     if (!this.hasEnough(clicker)) {
                         NextCoinflip.DEFAULT_CONFIG.sendMessage(clicker, "messages.balance-not-enough", new Placeholder()
                                 .add("{currency}", currency.identifier()));
 
-                        // Close the inventory
                         clicker.closeInventory();
-                        // Play fail sounds
                         SoundUtil.villagerNo(clicker);
                         return;
                     }
-                    // Mark this game as started
                     starting = true;
-                    // Set the challenger
                     this.setChallenger(clicker.getUniqueId());
-                    // Withdraw money from the challenger
                     if (!withdraw(clicker, this.getWager())) {
                         this.setChallenger(null);
                         starting = false;
@@ -177,7 +170,6 @@ public class CurrencyCoinflipGame extends CoinflipGame {
                         SoundUtil.villagerNo(clicker);
                         return;
                     }
-                    // Start the game
                     if (!this.start()) {
                         deposit(clicker, this.getWager());
                         this.setChallenger(null);
