@@ -1,9 +1,13 @@
 package com.muhammaddaffa.nextcoinflip.gui;
 
 import com.muhammaddaffa.mdlib.fastinv.FastInv;
-import com.muhammaddaffa.mdlib.utils.*;
+import com.muhammaddaffa.mdlib.utils.Common;
+import com.muhammaddaffa.mdlib.utils.Executor;
+import com.muhammaddaffa.mdlib.utils.ItemBuilder;
+import com.muhammaddaffa.mdlib.utils.Placeholder;
 import com.muhammaddaffa.nextcoinflip.NextCoinflip;
 import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.dialog.CoinflipDialog;
 import com.muhammaddaffa.nextcoinflip.coinflip.impl.CurrencyCoinflipGame;
 import com.muhammaddaffa.nextcoinflip.coinflip.impl.ItemCoinflipGame;
 import com.muhammaddaffa.nextcoinflip.users.User;
@@ -17,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +33,7 @@ public class CoinflipGUI extends FastInv {
     private final CoinflipGame game;
     private final Consumer<UUID> onWin;
 
+    private final List<Player> dialogViewers = new ArrayList<>(2);
     private boolean canClose = false;
 
     private CoinflipTask task;
@@ -50,6 +56,37 @@ public class CoinflipGUI extends FastInv {
 
         fill(new ItemBuilder(Material.BLUE_STAINED_GLASS_PANE).name(" "));
         this.startFlipAnimation();
+    }
+
+    public void openForPlayers(List<Player> players) {
+        CoinflipDialog dialog = NextCoinflip.getInstance().getCoinflipDialog();
+        Player creator = Bukkit.getPlayer(this.game.getCreator());
+        Player challenger = Bukkit.getPlayer(this.game.getChallenger());
+        for (Player player : players) {
+            if (dialog != null && creator != null && challenger != null
+                    && dialog.show(player, creator, challenger, null)) {
+                this.dialogViewers.add(player);
+            } else {
+                this.open(player);
+            }
+        }
+    }
+
+    private void revealDialog(UUID winner, Player creator, Player challenger) {
+        CoinflipDialog dialog = NextCoinflip.getInstance().getCoinflipDialog();
+        for (Player player : this.dialogViewers) {
+            if (player.isOnline() && !dialog.show(player, creator, challenger, winner)) {
+                player.closeDialog();
+            }
+        }
+        this.dialogViewers.clear();
+    }
+
+    private void closeInventory(Player player) {
+        if (player != null && player.isOnline()
+                && player.getOpenInventory().getTopInventory().equals(this.getInventory())) {
+            player.closeInventory();
+        }
     }
 
     private void startFlipAnimation() {
@@ -98,6 +135,7 @@ public class CoinflipGUI extends FastInv {
         private int step = 0;
         private final int totalSteps = 20;
         private int tickCounter = 0;
+        private int elapsedTicks;
         private double delay = 5.0;// Starting delay, increases over time
         private int collateral = 0;
 
@@ -135,6 +173,20 @@ public class CoinflipGUI extends FastInv {
                 finish();
                 return;
             }
+            if (!this.menu.dialogViewers.isEmpty()) {
+                this.elapsedTicks++;
+                if (this.elapsedTicks >= CoinflipDialog.REVEAL_TICK) {
+                    this.finish();
+                    return;
+                }
+                if (this.elapsedTicks == 14 || this.elapsedTicks == 44) {
+                    this.menu.playSound(this.menu.dialogViewers, this.elapsedTicks == 14
+                            ? Sound.ENTITY_PLAYER_ATTACK_SWEEP : Sound.BLOCK_NOTE_BLOCK_BASS);
+                }
+                if (this.menu.dialogViewers.size() == 2) {
+                    return;
+                }
+            }
             // Increment the tick counter
             tickCounter++;
 
@@ -171,7 +223,11 @@ public class CoinflipGUI extends FastInv {
                 }
 
                 // Play sound for both player
-                menu.playSound(List.of(creator, challenger), Sound.BLOCK_NOTE_BLOCK_PLING);
+                for (Player player : List.of(this.creator, this.challenger)) {
+                    if (!this.menu.dialogViewers.contains(player)) {
+                        this.menu.playSound(player, Sound.BLOCK_NOTE_BLOCK_PLING);
+                    }
+                }
 
                 // Reset the tick counter and adjust delay
                 tickCounter = 0;
@@ -259,11 +315,11 @@ public class CoinflipGUI extends FastInv {
 
             // Make player can close this menu
             menu.setCanClose(true);
+            this.menu.revealDialog(winner, this.creator, this.challenger);
             // Auto close 3 seconds later
             Executor.syncLater(60L, () -> {
-                // Close this menu for players
-                if (creator != null && creator.isOnline()) creator.closeInventory();
-                if (challenger != null && challenger.isOnline()) challenger.closeInventory();
+                this.menu.closeInventory(this.creator);
+                this.menu.closeInventory(this.challenger);
             });
 
             // Stop the task

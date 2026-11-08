@@ -166,7 +166,7 @@ public abstract class CoinflipGame {
             CoinflipRepository.removeGame(this);
         });
         // Open the menu for both player
-        this.getPlayers().forEach(menu::open);
+        menu.openForPlayers(this.getPlayers());
         return true;
     }
 

@@ -14,6 +14,10 @@ item-wager:
   hover-item: "&8[&f{item_displayname} &7{item_amount}x&8]"
   accept-button: "&a&l[CLICK TO ACCEPT]"
 
+# UUID of the deployed 26.3 pack containing the optional dialog assets.
+coinflip-dialog:
+  resource-pack-id: ''
+
 # The head item used when coinflip game is being played
 coinflip-head-item:
   display-name: "{player_displayname}"

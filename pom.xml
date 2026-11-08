@@ -94,6 +94,12 @@
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport</artifactId>
+            <version>4.2.16.Final</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- paper api -->
         <dependency>
             <groupId>io.papermc.paper</groupId>

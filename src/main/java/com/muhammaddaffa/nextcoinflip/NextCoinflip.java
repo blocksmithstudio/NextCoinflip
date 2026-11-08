@@ -3,7 +3,7 @@ package com.muhammaddaffa.nextcoinflip;
 import com.muhammaddaffa.mdlib.MDLib;
 import com.muhammaddaffa.mdlib.utils.Config;
 import com.muhammaddaffa.mdlib.utils.ConfigBuilder;
-import com.muhammaddaffa.nextcoinflip.coinflip.CoinflipGame;
+import com.muhammaddaffa.nextcoinflip.coinflip.dialog.CoinflipDialog;
 import com.muhammaddaffa.nextcoinflip.coinflip.repository.CoinflipRepository;
 import com.muhammaddaffa.nextcoinflip.coinflip.tasks.OfferExpiryTask;
 import com.muhammaddaffa.nextcoinflip.commands.CoinflipCommand;
@@ -19,6 +19,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
+
 public final class NextCoinflip extends JavaPlugin {
 
     private static final int PLUGIN_ID = 27532;
@@ -30,6 +32,8 @@ public final class NextCoinflip extends JavaPlugin {
             CONFIRM_ITEM_WAGER_CREATION_CONFIG, WON_ITEM_CONFIG, STATISTIC_CONFIG, CONFIRM_ITEM_WAGER_CHALLENGER_CONFIG;
 
     private final SQLDatabase database = new SQLDatabase();
+    private CoinflipDialog coinflipDialog;
+
     @Override
     public void onLoad() {
         MDLib.inject(this);
@@ -71,6 +75,9 @@ public final class NextCoinflip extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (this.coinflipDialog != null) {
+            this.coinflipDialog.shutdown();
+        }
         // On server stop, we should cancel all coinflip
         CoinflipRepository.getGames().forEach(game -> game.cancel(true));
         OfflineCommandManager.save();
@@ -110,6 +117,19 @@ public final class NextCoinflip extends JavaPlugin {
         // Register events
         pm.registerEvents(new UserQuitListener(), this);
         pm.registerEvents(new UserListener(), this);
+        String packId = DEFAULT_CONFIG.getConfig().getString("coinflip-dialog.resource-pack-id", "").trim();
+        if (!packId.isEmpty()) {
+            if (!Bukkit.getMinecraftVersion().equals("26.3")) {
+                this.getLogger().warning("The coinflip dialog pack requires Minecraft 26.3.");
+                return;
+            }
+            try {
+                this.coinflipDialog = new CoinflipDialog(UUID.fromString(packId), this);
+                pm.registerEvents(this.coinflipDialog, this);
+            } catch (IllegalArgumentException error) {
+                this.getLogger().warning("coinflip-dialog.resource-pack-id must be a resource pack UUID.");
+            }
+        }
     }
 
     private void commands() {
@@ -124,6 +144,10 @@ public final class NextCoinflip extends JavaPlugin {
     private void metrics() {
         Metrics metrics = new Metrics(this, PLUGIN_ID);
         // Maybe add custom chart in the future
+    }
+
+    public CoinflipDialog getCoinflipDialog() {
+        return this.coinflipDialog;
     }
 
     public SQLDatabase getDatabase() {
